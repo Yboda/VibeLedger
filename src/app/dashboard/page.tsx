@@ -5,12 +5,12 @@ import { LayoutDashboard, Wallet, PiggyBank, Target, BarChart3, TrendingUp, Home
 // Sidebar Logo
 function SidebarLogo() {
   return (
-    <div className="flex items-center justify-center py-6">
-      <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="20" cy="20" r="15" fill="#FBBF24" />
-        <circle cx="40" cy="20" r="15" fill="#F97354" />
-        <rect x="15" y="35" width="30" height="20" rx="2" fill="#FBBF24" />
-      </svg>
+    <div className="flex items-center justify-center py-4 pr-1">
+      <img 
+        src="/images/logo_d_bg.jpg" 
+        alt="VibeLedger Logo" 
+        className="h-24 w-auto"
+      />
     </div>
   )
 }
