@@ -8,30 +8,11 @@ import { Input } from "@/components/ui/input"
 function VibeLedgerLogo() {
   return (
     <div className="flex items-center justify-center gap-2">
-      <svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M5 25 L15 15 L25 25 L35 10 L45 20 L55 15"
-          stroke="url(#logoGradient)"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        <defs>
-          <linearGradient id="logoGradient" x1="5" y1="20" x2="55" y2="20">
-            <stop offset="0%" stopColor="#F97316" />
-            <stop offset="100%" stopColor="#FBBF24" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="flex items-center gap-1">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#FBBF24" />
-          <path d="M2 17L12 22L22 17" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M2 12L12 17L22 12" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span className="text-xl font-bold text-slate-800">VibeLedger</span>
-      </div>
+      <img 
+        src="/images/logo_w.jpg" 
+        alt="VibeLedger Logo" 
+        className="h-30 w-auto"
+      />
     </div>
   )
 }
@@ -42,13 +23,13 @@ function GeometricBackground() {
       {/* Top right decorations */}
       <div className="absolute -top-10 right-20 w-40 h-40 bg-yellow-400 rotate-45 opacity-90" />
       <div className="absolute top-20 right-0 w-32 h-32 bg-coral-500 rotate-12" style={{ backgroundColor: '#F97354' }} />
-      <div className="absolute top-10 right-40 w-24 h-24 bg-yellow-400 rotate-45" />
+      <div className="absolute top-10 right-40 w-24 h-24 bg-slate-900 rotate-45" />
       <div className="absolute top-40 right-10 w-20 h-20 bg-yellow-400 -rotate-12" />
       
       {/* Bottom left decorations */}
       <div className="absolute bottom-20 -left-10 w-36 h-36 bg-yellow-400 rotate-45" />
       <div className="absolute bottom-40 left-20 w-28 h-28 rotate-12" style={{ backgroundColor: '#F97354' }} />
-      <div className="absolute bottom-10 left-40 w-20 h-20 bg-yellow-400 rotate-45" />
+      <div className="absolute bottom-10 left-40 w-20 h-20 bg-slate-900 rotate-45" />
       
       {/* Scattered squares and shapes */}
       <div className="absolute top-1/4 left-10 w-8 h-8 border-2 border-slate-600 rotate-45 opacity-30" />
@@ -82,7 +63,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-800 flex items-center justify-center p-4 relative" style={{ backgroundColor: '#1e293b' }}>
       <GeometricBackground />
       
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md z-10">
+      <div className="bg-white rounded-2xl shadow-2xl px-8 pb-8 w-full max-w-md z-10">
         {/* Logo */}
         <div className="mb-6">
           <VibeLedgerLogo />
