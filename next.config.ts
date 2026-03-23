@@ -29,11 +29,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  logging: {
-    fetches: {
-      fullUrl: true,
-    },
-  },
+  // docker
+  output: 'standalone',
 };
 
 export default nextConfig;

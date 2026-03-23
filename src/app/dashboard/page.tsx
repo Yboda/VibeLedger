@@ -58,7 +58,7 @@ function Sidebar() {
   return (
     <div className="w-56 bg-slate-800 min-h-screen relative flex flex-col">
       <div className="py-4 pr-1">
-        <VibeLedgerLogo variant="dark" />
+        <VibeLedgerLogo variant="dark" height="h-26" />
       </div>
       <nav className="flex flex-col gap-1 mt-4">
         <NavItem icon={LayoutDashboard} label="Dashboard" active />

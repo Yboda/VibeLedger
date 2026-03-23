@@ -66,9 +66,8 @@ export const config = {
      * 아래 경로를 제외한 모든 경로에서 미들웨어 실행:
      * - _next/static (정적 파일)
      * - _next/image (이미지 최적화 파일)
-     * - favicon.ico (파비콘)
      * - public 폴더 안의 폰트, 이미지 등 (.woff2, .png, .jpg, .svg 등)
      */
-    '/((?!_next/static|_next/image|favicon.ico|fonts|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2)$).*)',
+    '/((?!_next/static|_next/image|fonts|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2)$).*)',
   ],
 };

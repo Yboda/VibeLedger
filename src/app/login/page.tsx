@@ -123,7 +123,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Email Field */}
           <div>
             <div className="flex flex-col gap-1">
@@ -155,7 +155,7 @@ export default function LoginPage() {
           {/* Password Field */}
           <div>
             <div className="flex flex-col gap-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700">
                 비밀번호
               </label>
               <div className="relative">
@@ -210,7 +210,7 @@ export default function LoginPage() {
         </form>
 
         {/* Divider */}
-        <div className="flex items-center py-4">
+        <div className="flex items-center my-6">
           <div className="flex-1 border-t border-gray-300" />
           <span className="px-4 text-sm text-gray-500">or sign in with</span>
           <div className="flex-1 border-t border-gray-300" />
