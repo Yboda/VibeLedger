@@ -33,8 +33,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 2. 세션 업데이트 및 유저 정보 확인 (getSession 대신 getUser!)
-  // 중요: getUser()는 서버에서 직접 인증 토큰을 검증하므로 안전합니다.
+  // 2. 세션 업데이트 및 유저 정보 확인
   const { data: { user } } = await supabase.auth.getUser()
 
   // 3. 리다이렉트 로직

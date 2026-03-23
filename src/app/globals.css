@@ -5,6 +5,37 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Tailwind CSS 자동완성을 위한 클래스 정의 */
+@layer base {
+  .bg-navy {
+    background-color: #1e293b;
+  }
+  .bg-coral {
+    background-color: #F97354;
+  }
+  .bg-yellow {
+    background-color: #FBBF24;
+  }
+  .text-navy {
+    color: #1e293b;
+  }
+  .text-coral {
+    color: #F97354;
+  }
+  .text-yellow {
+    color: #FBBF24;
+  }
+  .border-navy {
+    border-color: #1e293b;
+  }
+  .border-coral {
+    border-color: #F97354;
+  }
+  .border-yellow {
+    border-color: #FBBF24;
+  }
+}
+
 /* Pretendard 폰트 설정 */
 @font-face {
   font-family: 'Pretendard';
