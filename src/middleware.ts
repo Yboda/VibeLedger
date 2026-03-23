@@ -1,13 +1,13 @@
 // middleware.ts
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
-  })
+  });
 
   // 1. Supabase 클라이언트 생성
   const supabase = createServerClient(
@@ -16,38 +16,48 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
+          );
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
-          })
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
-          )
+          );
         },
       },
     }
-  )
+  );
 
   // 2. 세션 업데이트 및 유저 정보 확인
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // 3. 리다이렉트 로직
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  if (
+    !user &&
+    !(
+      request.nextUrl.pathname.startsWith('/login') ||
+      request.nextUrl.pathname.startsWith('/signup')
+    )
+  ) {
     // 로그인 안 됐는데 보호된 페이지 가려고 하면 로그인으로
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   if (user && request.nextUrl.pathname.startsWith('/login')) {
     // 로그인 됐는데 로그인 페이지 가려고 하면 루트(대시보드)로
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
-  return response
+  return response;
 }
 
 export const config = {
@@ -57,8 +67,8 @@ export const config = {
      * - _next/static (정적 파일)
      * - _next/image (이미지 최적화 파일)
      * - favicon.ico (파비콘)
-     * - 이미지 파일들 (svg, jpg 등)
+     * - public 폴더 안의 폰트, 이미지 등 (.woff2, .png, .jpg, .svg 등)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|fonts|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2)$).*)',
   ],
-}
+};

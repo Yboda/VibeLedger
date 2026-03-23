@@ -1,22 +1,11 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { QueryProvider } from "@/providers/query-provider";
-import { SupabaseProvider } from "@/providers/supabase-provider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from 'next';
+import './globals.css';
+import { QueryProvider } from '@/providers/query-provider';
+import { SupabaseProvider } from '@/providers/supabase-provider';
 
 export const metadata: Metadata = {
-  title: "VibeLedger",
-  description: "가계부 관리 애플리케이션",
+  title: 'VibeLedger',
+  description: '가계부 관리 애플리케이션',
 };
 
 export default function RootLayout({
@@ -26,13 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <QueryProvider>
-          <SupabaseProvider>
-            {children}
-          </SupabaseProvider>
+          <SupabaseProvider>{children}</SupabaseProvider>
         </QueryProvider>
       </body>
     </html>
