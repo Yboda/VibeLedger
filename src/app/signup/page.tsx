@@ -1,11 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Lock, User } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import VibeLedgerLogo from '@/components/common/VibeLedgerLogo';
+import { signup } from './actions';
+import { signupSchema, type SignupFormData } from '@/lib/validations/signup';
 
 function GeometricBackground() {
   return (
@@ -34,16 +38,34 @@ function GeometricBackground() {
 }
 
 export default function SignupPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    mode: 'onBlur',
+  });
+
+  const onSubmit = async (data: SignupFormData) => {
+    setIsLoading(true);
+    setServerError(null);
+
+    const result = await signup(data);
+
+    if (result?.success === false) {
+      setServerError(result.message);
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div
-      className="min-h-screen bg-slate-800 flex items-center justify-center p-4 relative"
-      style={{ backgroundColor: '#1e293b' }}
-    >
+    <div className="min-h-screen bg-brand-navy flex items-center justify-center p-4 relative">
       <GeometricBackground />
 
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md z-10">
@@ -60,8 +82,16 @@ export default function SignupPage() {
           </p>
         </div>
 
+        {/* Server Error */}
+        {serverError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <span className="text-sm text-red-700">{serverError}</span>
+          </div>
+        )}
+
         {/* Form */}
-        <form className="space-y-4" onSubmit={e => e.preventDefault()}>
+        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           {/* Name Field */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -71,12 +101,19 @@ export default function SignupPage() {
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="pl-10 h-12 border-brand-yellow focus:border-brand-yellow focus:ring-brand-yellow"
+                {...register('name')}
+                className={`pl-10 h-12 border-brand-yellow focus:border-brand-yellow focus:ring-brand-yellow ${
+                  errors.name
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                    : ''
+                }`}
                 placeholder="홍길동"
+                disabled={isLoading}
               />
             </div>
+            {errors.name && (
+              <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+            )}
           </div>
 
           {/* Email Field */}
@@ -88,12 +125,21 @@ export default function SignupPage() {
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="pl-10 h-12 border-brand-yellow focus:border-brand-yellow focus:ring-brand-yellow"
+                {...register('email')}
+                className={`pl-10 h-12 border-brand-yellow focus:border-brand-yellow focus:ring-brand-yellow ${
+                  errors.email
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                    : ''
+                }`}
                 placeholder="example@email.com"
+                disabled={isLoading}
               />
             </div>
+            {errors.email && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           {/* Password Field */}
@@ -104,13 +150,33 @@ export default function SignupPage() {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="pl-10 h-12 border-brand-yellow focus:border-brand-yellow focus:ring-brand-yellow"
+                type={showPassword ? 'text' : 'password'}
+                {...register('password')}
+                className={`pl-10 pr-10 h-12 border-brand-yellow focus:border-brand-yellow focus:ring-brand-yellow ${
+                  errors.password
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                    : ''
+                }`}
                 placeholder="8자 이상 입력해주세요"
+                disabled={isLoading}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
             </div>
+            {errors.password && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
           {/* Confirm Password Field */}
@@ -121,21 +187,42 @@ export default function SignupPage() {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
-                type="password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                className="pl-10 h-12 border-brand-yellow focus:border-brand-yellow focus:ring-brand-yellow"
+                type={showConfirmPassword ? 'text' : 'password'}
+                {...register('confirmPassword')}
+                className={`pl-10 pr-10 h-12 border-brand-yellow focus:border-brand-yellow focus:ring-brand-yellow ${
+                  errors.confirmPassword
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                    : ''
+                }`}
                 placeholder="비밀번호를 다시 입력해주세요"
+                disabled={isLoading}
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
             </div>
+            {errors.confirmPassword && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.confirmPassword.message}
+              </p>
+            )}
           </div>
 
           {/* Signup Button */}
           <Button
             type="submit"
             className="w-full h-12 bg-brand-coral text-white font-medium rounded-lg hover:bg-brand-coral/90"
+            disabled={isLoading}
           >
-            가입하기
+            {isLoading ? '처리 중...' : '가입하기'}
           </Button>
         </form>
 
@@ -200,7 +287,7 @@ export default function SignupPage() {
           <div className="text-slate-600">
             이미 계정이 있으신가요?{' '}
             <Link
-              href="/"
+              href="/login"
               className="text-slate-800 font-bold hover:text-slate-900"
             >
               로그인

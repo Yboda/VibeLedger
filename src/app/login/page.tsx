@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { login } from './actions';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import VibeLedgerLogo from '@/components/common/VibeLedgerLogo';
 
 function GeometricBackground() {
@@ -37,25 +39,8 @@ function GeometricBackground() {
   );
 }
 
-function SocialButton({
-  icon,
-  label,
-}: {
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <Button
-      variant="outline"
-      className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border-gray-300 text-slate-800"
-    >
-      {icon}
-      <span>{label}</span>
-    </Button>
-  );
-}
-
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -77,12 +62,18 @@ export default function LoginPage() {
     try {
       const result = await login(data);
 
-      if (!result.success) {
+      if (result.success) {
+        toast.success('로그인에 성공했습니다.');
+        router.push('/');
+      } else {
+        if ('redirectTo' in result && result.redirectTo) {
+          router.push(result.redirectTo);
+          return;
+        }
         setServerError(result.message || '로그인에 실패했습니다.');
         // 실패 시 비밀번호만 초기화
         reset({ ...data, password: '' });
       }
-      // 성공 시 서버 액션에서 리다이렉트 처리
     } catch (error) {
       console.error('Login submission error:', error);
       setServerError('서버 오류가 발생했습니다. 다시 시도해주세요.');

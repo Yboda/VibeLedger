@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { QueryProvider } from '@/providers/query-provider';
 import { SupabaseProvider } from '@/providers/supabase-provider';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'VibeLedger',
@@ -19,6 +20,7 @@ export default function RootLayout({
         <QueryProvider>
           <SupabaseProvider>{children}</SupabaseProvider>
         </QueryProvider>
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );
