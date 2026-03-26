@@ -1,4 +1,3 @@
-// middleware.ts
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -41,18 +40,21 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // 3. 리다이렉트 로직
-  if (
-    !user &&
-    !(
-      request.nextUrl.pathname.startsWith('/login') ||
-      request.nextUrl.pathname.startsWith('/signup')
-    )
-  ) {
+  const { pathname } = request.nextUrl;
+  const AUTH_ROUTES = [
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/update-password',
+  ];
+  const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
+
+  if (!user && !isAuthRoute) {
     // 로그인 안 됐는데 보호된 페이지 가려고 하면 로그인으로
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  if (user && request.nextUrl.pathname.startsWith('/login')) {
+  if (user && pathname.startsWith('/login')) {
     // 로그인 됐는데 로그인 페이지 가려고 하면 루트(대시보드)로
     return NextResponse.redirect(new URL('/', request.url));
   }
