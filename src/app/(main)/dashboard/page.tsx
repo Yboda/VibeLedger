@@ -1,97 +1,36 @@
 'use client';
 
-import {
-  LayoutDashboard,
-  Wallet,
-  PiggyBank,
-  Target,
-  BarChart3,
-  Home,
-  Utensils,
-  Bookmark,
-} from 'lucide-react';
-import VibeLedgerLogo from '@/components/common/VibeLedgerLogo';
+import { Home, Utensils, Bookmark } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
-// Sidebar Navigation Item
-function NavItem({
-  icon: Icon,
-  label,
-  active = false,
-}: {
-  icon: React.ElementType;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-center gap-3 px-4 py-3 mx-3 rounded-lg cursor-pointer transition-colors ${
-        active ? 'bg-brand-coral text-white' : 'text-white hover:bg-slate-700'
-      }`}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="font-medium">{label}</span>
-    </div>
-  );
-}
+// Header
+function Header({ userName }: { userName: string }) {
+  const currentHour = new Date().getHours();
 
-// Sidebar Decorative Shapes
-function SidebarDecoration() {
-  return (
-    <div className="absolute bottom-0 left-0 right-0 h-48 overflow-hidden">
-      {/* Yellow large shape */}
-      <div className="absolute bottom-8 left-4 w-20 h-20 bg-brand-yellow rounded-sm rotate-12" />
-      {/* Coral shape */}
-      <div className="absolute bottom-20 right-4 w-16 h-16 bg-brand-coral rounded-full" />
-      {/* Navy shape */}
-      <div className="absolute bottom-4 right-8 w-12 h-12 bg-brand-navy rounded-sm -rotate-12" />
-      {/* Yellow small person icon */}
-      <div className="absolute bottom-16 left-8 flex flex-col items-center">
-        <div className="w-6 h-6 bg-brand-yellow rounded-full" />
-        <div className="w-10 h-8 bg-brand-yellow rounded-t-full mt-1" />
-      </div>
-    </div>
-  );
-}
+  const getGreeting = () => {
+    if (currentHour < 12) return '좋은 아침이에요';
+    if (currentHour < 18) return '좋은 오후예요';
+    return '좋은 저녁이에요';
+  };
 
-// Sidebar Component
-function Sidebar() {
-  return (
-    <div className="w-56 bg-slate-800 min-h-screen relative flex flex-col">
-      <div className="py-4 pr-1">
-        <VibeLedgerLogo variant="dark" height="h-26" />
-      </div>
-      <nav className="flex flex-col gap-1 mt-4">
-        <NavItem icon={LayoutDashboard} label="Dashboard" active />
-        <NavItem icon={Wallet} label="Accounts" />
-        <NavItem icon={PiggyBank} label="Budgets" />
-        <NavItem icon={Target} label="Goals" />
-        <NavItem icon={BarChart3} label="Analytics" />
-      </nav>
-      <SidebarDecoration />
-    </div>
-  );
-}
-
-// Header with avatars
-function Header() {
   return (
     <div className="flex items-center justify-between mb-6">
-      <h1 className="text-3xl font-bold text-slate-800">Abstract Energy</h1>
-      <div className="flex items-center gap-2">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-200 to-amber-400 overflow-hidden">
-          <img
-            src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face"
-            alt="User avatar"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden">
-          <img
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
-            alt="User avatar"
-            className="w-full h-full object-cover"
-          />
-        </div>
+      <div>
+        <p className="text-slate-500 text-sm">{getGreeting()}</p>
+        <h1 className="text-2xl font-bold text-slate-800">
+          <span className="text-[#F97354]">{userName}</span>님, 반갑습니다!
+        </h1>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-slate-500">
+          {new Date().toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long',
+          })}
+        </span>
       </div>
     </div>
   );
@@ -555,40 +494,47 @@ function TopSpendingCategories() {
 
 // Main Dashboard Component
 export default function DashboardPage() {
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const name = user?.user_metadata?.display_name ?? user?.email ?? '';
+      setUserName(name);
+    });
+  }, []);
+
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 p-6">
-        <Header />
+    <>
+      <Header userName={userName} />
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-5 gap-4 mb-6">
-          <TotalBalanceCard />
-          <StatCard
-            title="Total Income"
-            value="$2,293.31"
-            chart={<MiniLineChart />}
-          />
-          <StatCard
-            title="Total Expenses"
-            value="$384.90"
-            chart={<MiniLineChart />}
-          />
-          <SavingsGoalCard />
-        </div>
+      {/* Stats Row */}
+      <div className="grid grid-cols-5 gap-4 mb-6">
+        <TotalBalanceCard />
+        <StatCard
+          title="Total Income"
+          value="$2,293.31"
+          chart={<MiniLineChart />}
+        />
+        <StatCard
+          title="Total Expenses"
+          value="$384.90"
+          chart={<MiniLineChart />}
+        />
+        <SavingsGoalCard />
+      </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <MonthlySpendingTrend />
-          <BudgetStatus />
-        </div>
+      {/* Charts Row */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <MonthlySpendingTrend />
+        <BudgetStatus />
+      </div>
 
-        {/* Bottom Row */}
-        <div className="grid grid-cols-2 gap-4">
-          <RecentTransactions />
-          <TopSpendingCategories />
-        </div>
-      </main>
-    </div>
+      {/* Bottom Row */}
+      <div className="grid grid-cols-2 gap-4">
+        <RecentTransactions />
+        <TopSpendingCategories />
+      </div>
+    </>
   );
 }
