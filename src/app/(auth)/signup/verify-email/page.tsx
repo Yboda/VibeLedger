@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, CheckCircle, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { resendVerificationEmail } from '@/actions/auth';
+import Spinner from '@/components/common/Spinner';
 
 const VALID_SOURCES = ['signup', 'login'] as const;
 
-export default function VerifyEmailPage() {
+function VerifyEmail() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const userEmail = searchParams.get('email') ?? '';
@@ -141,5 +142,19 @@ export default function VerifyEmailPage() {
         </Link>
       </div>
     </>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12">
+          <Spinner size="lg" />
+        </div>
+      }
+    >
+      <VerifyEmail />
+    </Suspense>
   );
 }

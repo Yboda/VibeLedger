@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: dockerfile
+      args:
+        # .env 파일에 정의된 변수명을 그대로 매핑
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     ports:
       - '3000:3000'
     env_file:

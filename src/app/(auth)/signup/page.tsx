@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { signup } from '@/actions/auth';
+import Spinner from '@/components/common/Spinner';
 import { signupSchema, type SignupFormData } from '@/lib/validations/signup';
 
 export default function SignupPage() {
@@ -185,7 +186,14 @@ export default function SignupPage() {
           className="w-full h-12 bg-brand-coral text-white font-medium rounded-lg hover:bg-brand-coral/90"
           disabled={isLoading}
         >
-          {isLoading ? '처리 중...' : '가입하기'}
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <Spinner size="sm" />
+              처리 중...
+            </span>
+          ) : (
+            '가입하기'
+          )}
         </Button>
       </form>
 

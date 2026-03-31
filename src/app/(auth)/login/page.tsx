@@ -11,6 +11,7 @@ import { login } from '@/actions/auth';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import Spinner from '@/components/common/Spinner';
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -149,10 +150,10 @@ export default function LoginPage() {
           disabled={isLoading}
         >
           {isLoading ? (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <span className="flex items-center gap-2">
+              <Spinner size="sm" />
               로그인 중...
-            </div>
+            </span>
           ) : (
             '로그인'
           )}
