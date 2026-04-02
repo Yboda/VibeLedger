@@ -51,7 +51,7 @@ function SummaryCards() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-slate-500 text-sm">이번 달 수입</p>
-            <p className="text-2xl font-bold text-slate-800">+$2,293.31</p>
+            <p className="text-2xl font-bold text-slate-800">+₩2,293.31</p>
           </div>
           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
             <ArrowDownRight className="w-6 h-6 text-green-600" />
@@ -64,7 +64,7 @@ function SummaryCards() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-slate-500 text-sm">이번 달 지출</p>
-            <p className="text-2xl font-bold text-slate-800">-$617.79</p>
+            <p className="text-2xl font-bold text-slate-800">-₩617.79</p>
           </div>
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
             <ArrowUpRight className="w-6 h-6 text-red-600" />
@@ -77,7 +77,7 @@ function SummaryCards() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-white/80 text-sm">순 잔액</p>
-            <p className="text-2xl font-bold">+$1,675.52</p>
+            <p className="text-2xl font-bold">+₩1,675.52</p>
           </div>
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
             <ArrowDownRight className="w-6 h-6 text-white" />
@@ -315,7 +315,7 @@ function TransactionList() {
                 className={`font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-slate-800'}`}
               >
                 {tx.type === 'income' ? '+' : ''}
-                {tx.amount < 0 ? '-' : ''}${Math.abs(tx.amount).toFixed(2)}
+                {tx.amount < 0 ? '-' : ''}₩{Math.abs(tx.amount).toFixed(2)}
               </p>
             </div>
           ))}

@@ -10,11 +10,9 @@ import {
   Coffee,
   Film,
   Dumbbell,
-  MoreHorizontal,
   Pencil,
   Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 // Header
@@ -47,30 +45,30 @@ function BudgetSummary() {
         <div>
           <p className="text-slate-500 text-sm">이번 달 전체 예산</p>
           <p className="text-3xl font-bold text-slate-800">
-            ${totalBudget.toLocaleString()}
+            ₩{totalBudget.toLocaleString()}
           </p>
         </div>
         <div className="text-right">
           <p className="text-slate-500 text-sm">남은 예산</p>
           <p className="text-2xl font-bold text-green-600">
-            ${remaining.toLocaleString()}
+            ₩{remaining.toLocaleString()}
           </p>
         </div>
       </div>
 
       <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden mb-2">
         <div
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#F97354] to-[#FBBF24] rounded-full transition-all duration-500"
+          className="absolute top-0 left-0 h-full bg-linear-to-r from-[#F97354] to-[#FBBF24] rounded-full transition-all duration-500"
           style={{ width: `${percentage}%` }}
         />
       </div>
 
       <div className="flex justify-between text-sm">
         <span className="text-slate-600">
-          사용: ${totalSpent.toLocaleString()} ({percentage.toFixed(1)}%)
+          사용: ₩{totalSpent.toLocaleString()} ({percentage.toFixed(1)}%)
         </span>
         <span className="text-slate-500">
-          목표까지 ${remaining.toLocaleString()} 남음
+          목표까지 ₩{remaining.toLocaleString()} 남음
         </span>
       </div>
     </div>
@@ -125,9 +123,9 @@ function BudgetCard({
       <div className="flex justify-between items-end mb-3">
         <div>
           <p className="text-2xl font-bold text-slate-800">
-            ${spent.toFixed(2)}
+            ₩{spent.toFixed(2)}
           </p>
-          <p className="text-sm text-slate-500">/ ${budget.toFixed(2)}</p>
+          <p className="text-sm text-slate-500">/ ₩{budget.toFixed(2)}</p>
         </div>
         <div
           className={`text-right ${isOverBudget ? 'text-red-500' : 'text-green-600'}`}
@@ -135,7 +133,7 @@ function BudgetCard({
           <p className="text-sm font-medium">
             {isOverBudget ? '초과' : '남음'}
           </p>
-          <p className="font-semibold">${Math.abs(remaining).toFixed(2)}</p>
+          <p className="font-semibold">₩{Math.abs(remaining).toFixed(2)}</p>
         </div>
       </div>
 
@@ -269,7 +267,7 @@ function MonthlyComparison() {
                 {m.month}
               </p>
               <p className="text-xs text-slate-500">
-                ${m.spent.toLocaleString()}
+                ₩{m.spent.toLocaleString()}
               </p>
             </div>
           );

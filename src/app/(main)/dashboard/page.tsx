@@ -42,7 +42,7 @@ function TotalBalanceCard() {
     <div className="bg-brand-coral rounded-xl p-5 text-white relative overflow-hidden col-span-2">
       <div className="relative z-10">
         <p className="text-white/90 text-sm mb-1">Total Balance</p>
-        <p className="text-3xl font-bold">$1,675.52</p>
+        <p className="text-3xl font-bold">₩1,675.52</p>
       </div>
       {/* Chart decoration */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -145,7 +145,7 @@ function SavingsGoalCard() {
             style={{ width: '80.7%' }}
           />
         </div>
-        <p className="text-xs text-slate-500 mt-1">Savings Goal: $1,000</p>
+        <p className="text-xs text-slate-500 mt-1">Savings Goal: ₩1,000</p>
       </div>
     </div>
   );
@@ -293,13 +293,13 @@ function BudgetStatus() {
     { label: 'Budget Status', value: '100%', progress: 100, color: '#3B82F6' },
     {
       label: 'Budget Incom',
-      value: '$30.00',
+      value: '₩30.00',
       progress: 100,
       color: 'var(--color-brand-yellow)',
     },
     {
       label: 'Total Expenses',
-      value: '$17.00',
+      value: '₩17.00',
       progress: 60,
       color: 'var(--color-brand-coral)',
     },
@@ -344,7 +344,7 @@ function RecentTransactions() {
       date: '08/12/23',
       description: 'Conver-transations',
       category: 'food',
-      amount: '-$30.00',
+      amount: '-₩30.00',
       icon: Utensils,
       iconBg: 'var(--color-brand-yellow)',
     },
@@ -352,7 +352,7 @@ function RecentTransactions() {
       date: '03/12/23',
       description: 'Good darrans',
       category: 'housing',
-      amount: '-$12.00',
+      amount: '-₩12.00',
       icon: Home,
       iconBg: 'var(--color-brand-coral)',
     },
@@ -360,7 +360,7 @@ function RecentTransactions() {
       date: '28/12/23',
       description: 'Placking former',
       category: 'food',
-      amount: '-$10.00',
+      amount: '-₩10.00',
       icon: Utensils,
       iconBg: 'var(--color-brand-coral)',
     },
@@ -368,7 +368,7 @@ function RecentTransactions() {
       date: '13/12/23',
       description: 'Placking fun',
       category: 'housing',
-      amount: '-$22.00',
+      amount: '-₩22.00',
       icon: Home,
       iconBg: 'var(--color-brand-yellow)',
     },
@@ -442,11 +442,11 @@ function TopSpendingCategories() {
           <div className="relative h-40">
             {/* Y-axis labels */}
             <div className="absolute left-0 top-0 bottom-6 w-8 flex flex-col justify-between text-xs text-slate-500">
-              <span>$250</span>
-              <span>$200</span>
-              <span>$150</span>
-              <span>$100</span>
-              <span>$50</span>
+              <span>₩250</span>
+              <span>₩200</span>
+              <span>₩150</span>
+              <span>₩100</span>
+              <span>₩50</span>
               <span>0</span>
             </div>
             {/* Bars */}
@@ -513,12 +513,12 @@ export default function DashboardPage() {
         <TotalBalanceCard />
         <StatCard
           title="Total Income"
-          value="$2,293.31"
+          value="₩2,293.31"
           chart={<MiniLineChart />}
         />
         <StatCard
           title="Total Expenses"
-          value="$384.90"
+          value="₩384.90"
           chart={<MiniLineChart />}
         />
         <SavingsGoalCard />

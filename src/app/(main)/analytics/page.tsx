@@ -10,11 +10,8 @@ import {
   Car,
   Coffee,
   Film,
-  ArrowUpRight,
-  ArrowDownRight,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 
 // Header
 function Header() {
@@ -52,7 +49,7 @@ function KeyMetrics() {
   const metrics = [
     {
       label: '평균 일일 지출',
-      value: '$27.45',
+      value: '₩27.45',
       change: '-12%',
       isPositive: true,
       icon: TrendingDown,
@@ -60,7 +57,7 @@ function KeyMetrics() {
     },
     {
       label: '가장 큰 지출',
-      value: '$350.00',
+      value: '₩350.00',
       subLabel: '주거비 (월세)',
       icon: Home,
       description: '이번 달',
@@ -283,14 +280,14 @@ function CategoryBreakdown() {
                   acc.offset = endAngle;
                   return acc;
                 },
-                { paths: [] as JSX.Element[], offset: 0 }
+                { paths: [] as React.ReactElement[], offset: 0 }
               ).paths
             }
             <circle cx="50" cy="50" r="25" fill="white" />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <p className="text-2xl font-bold text-slate-800">
-              ${total.toFixed(0)}
+              ₩{total.toFixed(0)}
             </p>
             <p className="text-xs text-slate-500">총 지출</p>
           </div>
@@ -311,7 +308,7 @@ function CategoryBreakdown() {
                     {cat.name}
                   </span>
                   <span className="text-sm font-semibold text-slate-800">
-                    ${cat.amount.toFixed(2)}
+                    ₩{cat.amount.toFixed(2)}
                   </span>
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -444,7 +441,7 @@ function WeeklyHeatmap() {
                     key={di}
                     className={`flex-1 h-10 rounded-lg ${getIntensity(value)} flex items-center justify-center text-xs font-medium text-slate-700 hover:ring-2 hover:ring-slate-400 transition-all cursor-pointer`}
                   >
-                    ${value}
+                    ₩{value}
                   </div>
                 ))}
               </div>
