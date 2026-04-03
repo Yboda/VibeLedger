@@ -115,7 +115,9 @@ export async function fetchMonthlyTransactionSummary(): Promise<MonthlyTransacti
   let totalExpense = 0;
 
   for (const tx of data ?? []) {
-    const catType = (tx.categories as { type: TransactionType } | null)?.type;
+    const catType = (
+      tx.categories as unknown as { type: TransactionType } | null
+    )?.type;
     if (catType === 'INCOME') totalIncome += tx.amount;
     else if (catType === 'EXPENSE') totalExpense += tx.amount;
   }
