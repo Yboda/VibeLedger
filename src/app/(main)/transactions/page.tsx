@@ -11,13 +11,42 @@ import {
   Car,
   Smartphone,
   Coffee,
+  Film,
+  Dumbbell,
+  Gift,
+  Plane,
+  Wallet,
+  CreditCard,
+  Briefcase,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, type ElementType } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Spinner from '@/components/common/Spinner';
+import { type Transaction, type TransactionType } from '@/lib/api/transactions';
+import { useMonthlySummaryQuery } from './_api/useMonthlySummaryQuery';
+import { useTransactionsQuery } from './_api/useTransactionsQuery';
+
+const ICON_MAP: Record<string, ElementType> = {
+  Utensils,
+  Home,
+  ShoppingBag,
+  Car,
+  Smartphone,
+  Coffee,
+  Film,
+  Dumbbell,
+  Gift,
+  Plane,
+  Wallet,
+  CreditCard,
+  Briefcase,
+  ArrowUpRight,
+  ArrowDownRight,
+};
 
 // Header
 function Header() {
@@ -45,39 +74,60 @@ function Header() {
 
 // Summary Cards
 function SummaryCards() {
+  const { data, isLoading: loading } = useMonthlySummaryQuery();
+
+  const summary = data ?? { totalIncome: 0, totalExpense: 0, netBalance: 0 };
+
   return (
     <div className="grid grid-cols-3 gap-4 mb-6">
       <div className="bg-white rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-slate-500 text-sm">이번 달 수입</p>
-            <p className="text-2xl font-bold text-slate-800">+₩2,293.31</p>
+            {loading ? (
+              <Spinner className="mt-2" />
+            ) : (
+              <p className="text-2xl font-bold text-slate-800">
+                +₩{summary.totalIncome.toLocaleString()}
+              </p>
+            )}
           </div>
           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
             <ArrowDownRight className="w-6 h-6 text-green-600" />
           </div>
         </div>
-        <p className="text-xs text-green-600 mt-2">지난 달 대비 +12.5%</p>
       </div>
 
       <div className="bg-white rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-slate-500 text-sm">이번 달 지출</p>
-            <p className="text-2xl font-bold text-slate-800">-₩617.79</p>
+            {loading ? (
+              <Spinner className="mt-2" />
+            ) : (
+              <p className="text-2xl font-bold text-slate-800">
+                -₩{summary.totalExpense.toLocaleString()}
+              </p>
+            )}
           </div>
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
             <ArrowUpRight className="w-6 h-6 text-red-600" />
           </div>
         </div>
-        <p className="text-xs text-red-600 mt-2">지난 달 대비 +8.3%</p>
       </div>
 
       <div className="bg-[#F97354] rounded-xl p-5 shadow-sm text-white">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-white/80 text-sm">순 잔액</p>
-            <p className="text-2xl font-bold">+₩1,675.52</p>
+            {loading ? (
+              <Spinner className="mt-2 text-white" />
+            ) : (
+              <p className="text-2xl font-bold">
+                {summary.netBalance >= 0 ? '+' : ''}₩
+                {summary.netBalance.toLocaleString()}
+              </p>
+            )}
           </div>
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
             <ArrowDownRight className="w-6 h-6 text-white" />
@@ -90,17 +140,25 @@ function SummaryCards() {
 }
 
 // Filter Bar
-function FilterBar() {
-  const [selectedFilter, setSelectedFilter] = useState('all');
-
+function FilterBar({
+  filter,
+  onFilterChange,
+  search,
+  onSearchChange,
+}: {
+  filter: 'all' | TransactionType;
+  onFilterChange: (filter: 'all' | TransactionType) => void;
+  search: string;
+  onSearchChange: (search: string) => void;
+}) {
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setSelectedFilter('all')}
+            onClick={() => onFilterChange('all')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              selectedFilter === 'all'
+              filter === 'all'
                 ? 'bg-slate-800 text-white'
                 : 'bg-gray-100 text-slate-600 hover:bg-gray-200'
             }`}
@@ -108,9 +166,9 @@ function FilterBar() {
             전체
           </button>
           <button
-            onClick={() => setSelectedFilter('income')}
+            onClick={() => onFilterChange('INCOME')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              selectedFilter === 'income'
+              filter === 'INCOME'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-slate-600 hover:bg-gray-200'
             }`}
@@ -118,9 +176,9 @@ function FilterBar() {
             수입
           </button>
           <button
-            onClick={() => setSelectedFilter('expense')}
+            onClick={() => onFilterChange('EXPENSE')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              selectedFilter === 'expense'
+              filter === 'EXPENSE'
                 ? 'bg-red-500 text-white'
                 : 'bg-gray-100 text-slate-600 hover:bg-gray-200'
             }`}
@@ -133,6 +191,8 @@ function FilterBar() {
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
+              value={search}
+              onChange={e => onSearchChange(e.target.value)}
               placeholder="거래 내역 검색..."
               className="pl-9 w-64 bg-gray-50 border-gray-200"
             />
@@ -148,28 +208,15 @@ function FilterBar() {
 }
 
 // Category Icon Component
-function CategoryIcon({ category }: { category: string }) {
-  const iconConfig: Record<string, { icon: React.ElementType; bg: string }> = {
-    food: { icon: Utensils, bg: '#FBBF24' },
-    housing: { icon: Home, bg: '#F97354' },
-    shopping: { icon: ShoppingBag, bg: '#8B5CF6' },
-    transport: { icon: Car, bg: '#3B82F6' },
-    electronics: { icon: Smartphone, bg: '#1e3a5f' },
-    cafe: { icon: Coffee, bg: '#A16207' },
-    salary: { icon: ArrowDownRight, bg: '#10B981' },
-    freelance: { icon: ArrowDownRight, bg: '#06B6D4' },
-  };
-
-  const config = iconConfig[category] || {
-    icon: MoreHorizontal,
-    bg: '#6B7280',
-  };
-  const Icon = config.icon;
+function CategoryIcon({ category }: { category: Transaction['categories'] }) {
+  const Icon =
+    (category?.icon ? ICON_MAP[category.icon] : null) ?? MoreHorizontal;
+  const bg = category?.color ?? '#6B7280';
 
   return (
     <div
       className="w-10 h-10 rounded-lg flex items-center justify-center"
-      style={{ backgroundColor: config.bg }}
+      style={{ backgroundColor: bg }}
     >
       <Icon className="w-5 h-5 text-white" />
     </div>
@@ -177,108 +224,31 @@ function CategoryIcon({ category }: { category: string }) {
 }
 
 // Transaction List
-function TransactionList() {
-  const transactions = [
-    {
-      id: 1,
-      date: '2023-12-13',
-      description: '월급',
-      category: 'salary',
-      categoryLabel: '급여',
-      amount: 2000.0,
-      type: 'income',
-    },
-    {
-      id: 2,
-      date: '2023-12-13',
-      description: '프리랜서 수입',
-      category: 'freelance',
-      categoryLabel: '부수입',
-      amount: 293.31,
-      type: 'income',
-    },
-    {
-      id: 3,
-      date: '2023-12-12',
-      description: '스타벅스',
-      category: 'cafe',
-      categoryLabel: '카페',
-      amount: -5.5,
-      type: 'expense',
-    },
-    {
-      id: 4,
-      date: '2023-12-12',
-      description: '배달의민족',
-      category: 'food',
-      categoryLabel: '식비',
-      amount: -22.0,
-      type: 'expense',
-    },
-    {
-      id: 5,
-      date: '2023-12-11',
-      description: '월세',
-      category: 'housing',
-      categoryLabel: '주거',
-      amount: -350.0,
-      type: 'expense',
-    },
-    {
-      id: 6,
-      date: '2023-12-11',
-      description: '쿠팡 온라인쇼핑',
-      category: 'shopping',
-      categoryLabel: '쇼핑',
-      amount: -45.9,
-      type: 'expense',
-    },
-    {
-      id: 7,
-      date: '2023-12-10',
-      description: '지하철 충전',
-      category: 'transport',
-      categoryLabel: '교통',
-      amount: -30.0,
-      type: 'expense',
-    },
-    {
-      id: 8,
-      date: '2023-12-10',
-      description: '점심 식사',
-      category: 'food',
-      categoryLabel: '식비',
-      amount: -12.0,
-      type: 'expense',
-    },
-    {
-      id: 9,
-      date: '2023-12-09',
-      description: '아이폰 케이스',
-      category: 'electronics',
-      categoryLabel: '전자기기',
-      amount: -25.0,
-      type: 'expense',
-    },
-    {
-      id: 10,
-      date: '2023-12-08',
-      description: '마트 장보기',
-      category: 'food',
-      categoryLabel: '식비',
-      amount: -67.39,
-      type: 'expense',
-    },
-  ];
+function TransactionList({
+  transactions,
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  loading,
+}: {
+  transactions: Transaction[];
+  total: number;
+  page: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  loading: boolean;
+}) {
+  const totalPages = Math.ceil(total / pageSize);
 
   const groupedTransactions = transactions.reduce(
     (acc, tx) => {
-      const date = tx.date;
+      const date = tx.date.slice(0, 10);
       if (!acc[date]) acc[date] = [];
       acc[date].push(tx);
       return acc;
     },
-    {} as Record<string, typeof transactions>
+    {} as Record<string, Transaction[]>
   );
 
   const formatDate = (dateStr: string) => {
@@ -290,87 +260,169 @@ function TransactionList() {
     });
   };
 
+  const formatAmount = (tx: Transaction) => {
+    const sign = tx.categories?.type === 'INCOME' ? '+' : '-';
+    return `${sign}₩${tx.amount.toLocaleString()}`;
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-      {Object.entries(groupedTransactions).map(([date, txs]) => (
-        <div key={date}>
-          <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
-            <p className="text-sm font-medium text-slate-600">
-              {formatDate(date)}
-            </p>
-          </div>
-          {txs.map(tx => (
-            <div
-              key={tx.id}
-              className="px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center justify-between"
-            >
-              <div className="flex items-center gap-4">
-                <CategoryIcon category={tx.category} />
-                <div>
-                  <p className="font-medium text-slate-800">{tx.description}</p>
-                  <p className="text-sm text-slate-500">{tx.categoryLabel}</p>
-                </div>
-              </div>
-              <p
-                className={`font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-slate-800'}`}
-              >
-                {tx.type === 'income' ? '+' : ''}
-                {tx.amount < 0 ? '-' : ''}₩{Math.abs(tx.amount).toFixed(2)}
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Spinner size="lg" />
+        </div>
+      ) : transactions.length === 0 ? (
+        <div className="py-16 text-center text-slate-500">
+          거래 내역이 없습니다.
+        </div>
+      ) : (
+        Object.entries(groupedTransactions).map(([date, txs]) => (
+          <div key={date}>
+            <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
+              <p className="text-sm font-medium text-slate-600">
+                {formatDate(date)}
               </p>
             </div>
-          ))}
-        </div>
-      ))}
-
-      {/* Pagination */}
-      <div className="px-5 py-4 flex items-center justify-between">
-        <p className="text-sm text-slate-500">총 128개 거래 중 1-10 표시</p>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            이전
-          </Button>
-          <div className="flex items-center gap-1">
-            <button className="w-8 h-8 rounded bg-slate-800 text-white text-sm font-medium">
-              1
-            </button>
-            <button className="w-8 h-8 rounded hover:bg-gray-100 text-slate-600 text-sm">
-              2
-            </button>
-            <button className="w-8 h-8 rounded hover:bg-gray-100 text-slate-600 text-sm">
-              3
-            </button>
-            <span className="text-slate-400 px-1">...</span>
-            <button className="w-8 h-8 rounded hover:bg-gray-100 text-slate-600 text-sm">
-              13
-            </button>
+            {txs.map(tx => (
+              <div
+                key={tx.id}
+                className="px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center justify-between"
+              >
+                <div className="flex items-center gap-4">
+                  <CategoryIcon category={tx.categories} />
+                  <div>
+                    <p className="font-medium text-slate-800">
+                      {tx.description ?? '(메모 없음)'}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {tx.categories?.name ?? '미분류'}
+                    </p>
+                  </div>
+                </div>
+                <p
+                  className={`font-semibold ${
+                    tx.categories?.type === 'INCOME'
+                      ? 'text-green-600'
+                      : 'text-slate-800'
+                  }`}
+                >
+                  {formatAmount(tx)}
+                </p>
+              </div>
+            ))}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
-          >
-            다음
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+        ))
+      )}
+
+      {!loading && total > 0 && (
+        <div className="px-5 py-4 flex items-center justify-between">
+          <p className="text-sm text-slate-500">
+            총 {total}개 거래 중 {(page - 1) * pageSize + 1}-
+            {Math.min(page * pageSize, total)} 표시
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page === 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              이전
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                const pageNum =
+                  totalPages <= 5
+                    ? i + 1
+                    : page <= 3
+                      ? i + 1
+                      : page >= totalPages - 2
+                        ? totalPages - 4 + i
+                        : page - 2 + i;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => onPageChange(pageNum)}
+                    className={`w-8 h-8 rounded text-sm ${
+                      pageNum === page
+                        ? 'bg-slate-800 text-white font-medium'
+                        : 'hover:bg-gray-100 text-slate-600'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page === totalPages || totalPages === 0}
+            >
+              다음
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 // Main Transactions Page
 export default function TransactionsPage() {
+  const [filter, setFilter] = useState<'all' | TransactionType>('all');
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const { data: txData, isLoading: loading } = useTransactionsQuery({
+    page,
+    pageSize: PAGE_SIZE,
+    type: filter,
+    search,
+  });
+
+  const transactions = txData?.data ?? [];
+  const total = txData?.total ?? 0;
+
+  const handleFilterChange = (newFilter: 'all' | TransactionType) => {
+    setFilter(newFilter);
+    setPage(1);
+  };
+
   return (
     <>
       <Header />
       <SummaryCards />
-      <FilterBar />
-      <TransactionList />
+      <FilterBar
+        filter={filter}
+        onFilterChange={handleFilterChange}
+        search={searchInput}
+        onSearchChange={setSearchInput}
+      />
+      <TransactionList
+        transactions={transactions}
+        total={total}
+        page={page}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+        loading={loading}
+      />
     </>
   );
 }
