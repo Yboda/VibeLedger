@@ -77,6 +77,75 @@ export async function fetchTransactions({
   };
 }
 
+export interface CreateTransactionInput {
+  amount: number;
+  description: string | null;
+  date: string;
+  category_id: number | null;
+}
+
+export interface UpdateTransactionInput {
+  amount?: number;
+  description?: string | null;
+  date?: string;
+  category_id?: number | null;
+}
+
+export async function fetchCategories(): Promise<Category[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name, type, icon, color')
+    .order('type', { ascending: false })
+    .order('name');
+  if (error) throw new Error(error.message);
+  return (data as Category[]) ?? [];
+}
+
+export async function createTransaction(
+  input: CreateTransactionInput
+): Promise<{ data: Transaction | null; error: string | null }> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: '로그인이 필요합니다.' };
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .insert({ ...input, user_id: user.id })
+    .select('*, categories(*)')
+    .single();
+
+  if (error) return { data: null, error: error.message };
+  return { data: data as unknown as Transaction, error: null };
+}
+
+export async function updateTransaction(
+  id: number,
+  input: UpdateTransactionInput
+): Promise<{ data: Transaction | null; error: string | null }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('transactions')
+    .update(input)
+    .eq('id', id)
+    .select('*, categories(*)')
+    .single();
+
+  if (error) return { data: null, error: error.message };
+  return { data: data as unknown as Transaction, error: null };
+}
+
+export async function deleteTransaction(
+  id: number
+): Promise<{ error: string | null }> {
+  const supabase = createClient();
+  const { error } = await supabase.from('transactions').delete().eq('id', id);
+  if (error) return { error: error.message };
+  return { error: null };
+}
+
 export async function fetchMonthlyTransactionSummary(): Promise<MonthlyTransactionSummary> {
   const supabase = createClient();
 
