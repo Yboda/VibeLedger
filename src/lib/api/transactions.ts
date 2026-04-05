@@ -21,6 +21,14 @@ export interface Transaction {
   categories: Category | null;
 }
 
+export interface CategorySpending {
+  category_id: number;
+  name: string;
+  color: string;
+  icon: string | null;
+  total: number;
+}
+
 export interface FetchTransactionsOptions {
   page?: number;
   pageSize?: number;
@@ -144,6 +152,113 @@ export async function deleteTransaction(
   const { error } = await supabase.from('transactions').delete().eq('id', id);
   if (error) return { error: error.message };
   return { error: null };
+}
+
+export async function fetchRecentTransactions(
+  limit = 5
+): Promise<Transaction[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*, categories(*)')
+    .order('date', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data as unknown as Transaction[]) ?? [];
+}
+
+export async function fetchCategorySpending(): Promise<CategorySpending[]> {
+  const supabase = createClient();
+  const now = new Date();
+  const startOfMonth = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1
+  ).toISOString();
+  const endOfMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59
+  ).toISOString();
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('amount, categories(id, name, color, icon, type)')
+    .gte('date', startOfMonth)
+    .lte('date', endOfMonth);
+
+  if (error) throw new Error(error.message);
+
+  const map = new Map<number, CategorySpending>();
+  for (const tx of data ?? []) {
+    const cat = tx.categories as unknown as {
+      id: number;
+      name: string;
+      color: string;
+      icon: string | null;
+      type: string;
+    } | null;
+    if (!cat || cat.type !== 'EXPENSE') continue;
+    const existing = map.get(cat.id);
+    if (existing) {
+      existing.total += tx.amount;
+    } else {
+      map.set(cat.id, {
+        category_id: cat.id,
+        name: cat.name,
+        color: cat.color ?? '#6B7280',
+        icon: cat.icon,
+        total: tx.amount,
+      });
+    }
+  }
+
+  return Array.from(map.values())
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+}
+
+export interface MonthlyTrend {
+  month: string;
+  income: number;
+  expense: number;
+}
+
+export async function fetchMonthlyTrend(months = 12): Promise<MonthlyTrend[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc(
+    'get_monthly_income_expense_trend',
+    { months_count: months }
+  );
+  if (error) throw new Error(error.message);
+
+  // RPC 결과를 YYYY-MM 키로 맵핑
+  const rpcMap = new Map<string, { income: number; expense: number }>();
+  for (const row of data ?? []) {
+    rpcMap.set(row.month as string, {
+      income: Number(row.income) || 0,
+      expense: Number(row.expense) || 0,
+    });
+  }
+
+  // 현재 달 기준 최근 N개월 슬롯 생성 (빈 달 → 0)
+  const now = new Date();
+  const result: MonthlyTrend[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = `${d.getMonth() + 1}월`;
+    const found = rpcMap.get(key);
+    result.push({
+      month: label,
+      income: found?.income ?? 0,
+      expense: found?.expense ?? 0,
+    });
+  }
+  return result;
 }
 
 export async function fetchMonthlyTransactionSummary(): Promise<MonthlyTransactionSummary> {

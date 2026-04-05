@@ -1,6 +1,6 @@
 import {
   BookOpen,
-  Briefcase,
+  Banknote,
   Car,
   Gift,
   Heart,
@@ -24,7 +24,7 @@ const ICON_MAP: Record<string, ElementType> = {
   heart: Heart,
   'book-open': BookOpen,
   music: Music,
-  briefcase: Briefcase,
+  briefcase: Banknote,
   gift: Gift,
   'trending-up': TrendingUp,
 };

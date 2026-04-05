@@ -1,128 +1,113 @@
+'use client';
+
+import Link from 'next/link';
+import {
+  ComposedChart,
+  Bar,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import Spinner from '@/components/common/Spinner';
+import { useMonthlyTrendQuery } from '../_api/useMonthlyTrendQuery';
+
+const NAVY = '#1e293b';
+const YELLOW = '#fbbf24';
+
+function formatYAxis(value: number) {
+  if (value >= 10000) return `${Math.floor(value / 10000)}만`;
+  return `${value}`;
+}
+
 export function MonthlySpendingTrend() {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Dec',
-  ];
+  const { data = [], isLoading } = useMonthlyTrendQuery(12);
 
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm col-span-3">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-slate-800">Monthly Spending Trend</h3>
-        <button className="text-brand-coral text-sm font-medium">
-          View all
-        </button>
+        <h3 className="font-semibold text-slate-800">
+          월별 수입 / 지출 트렌드
+        </h3>
+        <Link
+          href="/analytics"
+          className="text-[#F97354] text-sm font-medium hover:underline"
+        >
+          분석 보기
+        </Link>
       </div>
-      <div className="relative h-48">
-        <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-xs text-slate-500">
-          <span>200</span>
-          <span>150</span>
-          <span>100</span>
-          <span>50</span>
-          <span>0</span>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-[192px]">
+          <Spinner size="sm" />
         </div>
-        <div className="ml-10 h-40 relative">
-          <svg
-            width="100%"
-            height="100%"
-            viewBox="0 0 400 160"
-            preserveAspectRatio="none"
+      ) : (
+        <ResponsiveContainer width="100%" height={192}>
+          <ComposedChart
+            data={data}
+            margin={{ top: 4, right: 8, bottom: 0, left: 8 }}
+            barCategoryGap="40%"
           >
-            <path
-              d="M0 140 Q40 120 80 100 T160 80 T240 60 T320 80 T400 100 L400 160 L0 160 Z"
-              fill="var(--color-brand-coral)"
-              fillOpacity="0.8"
+            <defs>
+              <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={YELLOW} stopOpacity={0.35} />
+                <stop offset="95%" stopColor={YELLOW} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke="#f1f5f9" />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 12, fill: '#94a3b8' }}
+              axisLine={false}
+              tickLine={false}
             />
-            <path
-              d="M0 160 Q40 140 80 120 T160 100 T240 80 T320 100 T400 120 L400 160 L0 160 Z"
-              fill="var(--color-brand-yellow)"
-              fillOpacity="0.9"
+            <YAxis
+              tickFormatter={formatYAxis}
+              tick={{ fontSize: 11, fill: '#94a3b8' }}
+              axisLine={false}
+              tickLine={false}
+              width={40}
             />
-            <rect
-              x="20"
-              y="90"
-              width="20"
-              height="70"
-              fill="var(--color-brand-navy)"
+            <Tooltip
+              formatter={(value: unknown, name: unknown) => [
+                `${Number(value).toLocaleString('ko-KR')}원`,
+                name === 'income' ? '수입' : '지출',
+              ]}
+              contentStyle={{
+                borderRadius: 8,
+                fontSize: 13,
+                border: '1px solid #e2e8f0',
+              }}
+              cursor={{ fill: '#f8fafc' }}
             />
-            <rect
-              x="60"
-              y="100"
-              width="20"
-              height="60"
-              fill="var(--color-brand-navy)"
+            <Legend
+              formatter={value => (value === 'income' ? '수입' : '지출')}
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
             />
-            <rect
-              x="100"
-              y="80"
-              width="20"
-              height="80"
-              fill="var(--color-brand-navy)"
+            {/* 수입: Area (물결+배경색, 바 뒤에 렌더) */}
+            <Area
+              type="monotone"
+              dataKey="income"
+              stroke={YELLOW}
+              strokeWidth={2}
+              fill="url(#incomeGradient)"
+              dot={false}
+              activeDot={{ r: 4, strokeWidth: 0 }}
             />
-            <rect
-              x="140"
-              y="70"
-              width="20"
-              height="90"
-              fill="var(--color-brand-navy)"
+            {/* 지출: Bar (앞에 렌더) */}
+            <Bar
+              dataKey="expense"
+              fill={NAVY}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={36}
             />
-            <rect
-              x="180"
-              y="60"
-              width="20"
-              height="100"
-              fill="var(--color-brand-navy)"
-            />
-            <rect
-              x="220"
-              y="50"
-              width="20"
-              height="110"
-              fill="var(--color-brand-navy)"
-            />
-            <rect
-              x="260"
-              y="70"
-              width="20"
-              height="90"
-              fill="var(--color-brand-navy)"
-            />
-            <rect
-              x="300"
-              y="90"
-              width="20"
-              height="70"
-              fill="var(--color-brand-navy)"
-            />
-            <rect
-              x="340"
-              y="80"
-              width="20"
-              height="80"
-              fill="var(--color-brand-navy)"
-            />
-            <rect
-              x="380"
-              y="100"
-              width="20"
-              height="60"
-              fill="var(--color-brand-navy)"
-            />
-          </svg>
-        </div>
-        <div className="ml-10 flex justify-between text-xs text-slate-500 mt-2">
-          {months.map(month => (
-            <span key={month}>{month}</span>
-          ))}
-        </div>
-      </div>
+          </ComposedChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

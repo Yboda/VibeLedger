@@ -2,7 +2,7 @@ export function TotalBalanceCard() {
   return (
     <div className="bg-brand-coral rounded-xl p-5 text-white relative overflow-hidden col-span-2">
       <div className="relative z-10">
-        <p className="text-white/90 text-sm mb-1">Total Balance</p>
+        <p className="text-white/90 text-sm mb-1">총 잔액</p>
         <p className="text-3xl font-bold">₩1,675.52</p>
       </div>
       <div className="absolute right-4 top-1/2 -translate-y-1/2">

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTransactionModal } from '../_providers/transaction-modal-context';
 
 // Sidebar Navigation Item
 function NavItem({
@@ -54,6 +55,7 @@ function SidebarDecoration() {
 // Sidebar Component
 export function Sidebar() {
   const pathname = usePathname();
+  const { openModal } = useTransactionModal();
 
   return (
     <div className="w-56 bg-slate-800 min-h-screen relative flex flex-col">
@@ -63,25 +65,25 @@ export function Sidebar() {
       <nav className="flex flex-col gap-1 mt-4">
         <NavItem
           icon={LayoutDashboard}
-          label="Dashboard"
+          label="대시보드"
           href="/dashboard"
           active={pathname === '/dashboard'}
         />
         <NavItem
           icon={ArrowLeftRight}
-          label="Transactions"
+          label="거래 내역"
           href="/transactions"
           active={pathname.startsWith('/transactions')}
         />
         <NavItem
           icon={PiggyBank}
-          label="Budgets"
+          label="예산"
           href="/budgets"
           active={pathname.startsWith('/budgets')}
         />
         <NavItem
           icon={BarChart3}
-          label="Analytics"
+          label="분석"
           href="/analytics"
           active={pathname.startsWith('/analytics')}
         />
@@ -89,13 +91,13 @@ export function Sidebar() {
 
       {/* Add Transaction Button */}
       <div className="px-3 mt-6">
-        <Link
-          href="/dashboard/transactions/new"
+        <button
+          onClick={() => openModal()}
           className="flex items-center justify-center gap-2 w-full py-3 bg-[#F97354] hover:bg-[#e86344] text-white rounded-lg font-medium transition-colors"
         >
           <Plus className="w-5 h-5" />
           <span>지출 등록</span>
-        </Link>
+        </button>
       </div>
 
       <SidebarDecoration />

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { HandCoins, Receipt, Activity } from 'lucide-react';
 import Spinner from '@/components/common/Spinner';
 import { useMonthlySummaryQuery } from '../_api/useMonthlySummaryQuery';
 
@@ -24,7 +24,7 @@ export function SummaryCards() {
             )}
           </div>
           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-            <ArrowDownRight className="w-6 h-6 text-green-600" />
+            <HandCoins className="w-6 h-6 text-green-600" />
           </div>
         </div>
       </div>
@@ -42,7 +42,7 @@ export function SummaryCards() {
             )}
           </div>
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-            <ArrowUpRight className="w-6 h-6 text-red-600" />
+            <Receipt className="w-6 h-6 text-red-600" />
           </div>
         </div>
       </div>
@@ -50,7 +50,7 @@ export function SummaryCards() {
       <div className="bg-[#F97354] rounded-xl p-5 shadow-sm text-white">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-white/80 text-sm">순 잔액</p>
+            <p className="text-white/80 text-sm">이달의 흐름</p>
             {loading ? (
               <Spinner className="mt-2 text-white" />
             ) : (
@@ -61,7 +61,7 @@ export function SummaryCards() {
             )}
           </div>
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-            <ArrowDownRight className="w-6 h-6 text-white" />
+            <Activity className="w-6 h-6 text-white" />
           </div>
         </div>
         <p className="text-xs text-white/80 mt-2">수입 - 지출</p>

@@ -43,14 +43,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-5 gap-4 mb-6">
         <TotalBalanceCard />
         <StatCard
-          title="Total Income"
+          title="이번 달 수입"
           value="₩2,293.31"
-          chart={<MiniLineChart />}
+          chart={<MiniLineChart color="var(--color-brand-yellow)" />}
         />
         <StatCard
-          title="Total Expenses"
+          title="이번 달 지출"
           value="₩384.90"
-          chart={<MiniLineChart />}
+          chart={<MiniLineChart color="var(--color-brand-navy)" />}
         />
         <SavingsGoalCard />
       </div>
