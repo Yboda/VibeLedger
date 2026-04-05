@@ -1,43 +1,108 @@
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import { fetchMonthlyBudgetTotals } from '@/lib/api/budgets';
+import { useMonthlyTrendQuery } from '../../dashboard/_api/useMonthlyTrendQuery';
+import Spinner from '@/components/common/Spinner';
+
+function formatYAxis(value: number) {
+  if (value >= 10000) return `${Math.floor(value / 10000)}만`;
+  return `${value}`;
+}
+
 export function MonthlyComparison() {
-  const months = [
-    { month: '9월', budget: 2000, spent: 1654 },
-    { month: '10월', budget: 2000, spent: 1823 },
-    { month: '11월', budget: 2000, spent: 1567 },
-    { month: '12월', budget: 2000, spent: 847.79 },
-  ];
+  const { data: budgetTotals = [], isLoading: isBudgetLoading } = useQuery({
+    queryKey: ['budgets', 'monthly-totals', 6],
+    queryFn: () => fetchMonthlyBudgetTotals(6),
+  });
+
+  const { data: spendingTrend = [], isLoading: isSpendingLoading } =
+    useMonthlyTrendQuery(6);
+
+  const isLoading = isBudgetLoading || isSpendingLoading;
+
+  const chartData = budgetTotals.map(bt => {
+    const spending = spendingTrend.find(s => s.month === bt.month);
+    return {
+      month: bt.month,
+      예산: bt.budget,
+      지출: spending?.expense ?? 0,
+    };
+  });
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm mt-6">
       <h3 className="text-lg font-semibold text-slate-800 mb-4">
-        월별 예산 사용 추이
+        월별 예산 vs 지출 추이
       </h3>
-      <div className="flex items-end gap-4 h-48">
-        {months.map((m, i) => {
-          const percentage = (m.spent / m.budget) * 100;
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center">
-              <div
-                className="w-full bg-gray-100 rounded-t-lg relative"
-                style={{ height: '160px' }}
-              >
-                <div
-                  className="absolute bottom-0 w-full rounded-t-lg transition-all duration-500"
-                  style={{
-                    height: `${percentage}%`,
-                    background: `linear-gradient(to top, #F97354, #FBBF24)`,
-                  }}
-                />
-              </div>
-              <p className="text-sm font-medium text-slate-700 mt-2">
-                {m.month}
-              </p>
-              <p className="text-xs text-slate-500">
-                ₩{m.spent.toLocaleString()}
-              </p>
-            </div>
-          );
-        })}
-      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-48">
+          <Spinner size="sm" />
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={192}>
+          <BarChart
+            data={chartData}
+            margin={{ top: 4, right: 8, bottom: 0, left: 8 }}
+            barCategoryGap="30%"
+            barGap={4}
+          >
+            <CartesianGrid vertical={false} stroke="#f1f5f9" />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 12, fill: '#94a3b8' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tickFormatter={formatYAxis}
+              tick={{ fontSize: 11, fill: '#94a3b8' }}
+              axisLine={false}
+              tickLine={false}
+              width={40}
+            />
+            <Tooltip
+              formatter={(value: unknown, name: unknown) => [
+                `${Number(value).toLocaleString('ko-KR')}원`,
+                String(name),
+              ]}
+              contentStyle={{
+                borderRadius: 8,
+                fontSize: 13,
+                border: '1px solid #e2e8f0',
+              }}
+              cursor={{ fill: '#f8fafc' }}
+            />
+            <Legend
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+            />
+            <Bar
+              dataKey="예산"
+              fill="#cbd5e1"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={32}
+            />
+            <Bar
+              dataKey="지출"
+              fill="#1e293b"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={32}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

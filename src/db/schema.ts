@@ -1,7 +1,19 @@
-import { pgTable, serial, text, integer, timestamp, uuid, pgEnum } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  serial,
+  text,
+  integer,
+  timestamp,
+  uuid,
+  pgEnum,
+  unique,
+} from 'drizzle-orm/pg-core';
 
 // 거래 유형 정의 (지출/수입)
-export const transactionTypeEnum = pgEnum('transaction_type', ['INCOME', 'EXPENSE']);
+export const transactionTypeEnum = pgEnum('transaction_type', [
+  'INCOME',
+  'EXPENSE',
+]);
 
 // 1. 유저 프로필 (Supabase Auth ID와 연동)
 export const profiles = pgTable('profiles', {
@@ -18,7 +30,9 @@ export const categories = pgTable('categories', {
   type: transactionTypeEnum('type').default('EXPENSE').notNull(),
   icon: text('icon'), // UI에서 보여줄 아이콘 이름 (Lucide-react 등)
   color: text('color'), // 차트에서 사용할 색상 코드 (예: #FF5733)
-  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => profiles.id, {
+    onDelete: 'cascade',
+  }),
 });
 
 // 3. 거래 내역 (가장 중요한 테이블)
@@ -27,17 +41,38 @@ export const transactions = pgTable('transactions', {
   amount: integer('amount').notNull(), // 금액 (정수형으로 저장하여 부동소수점 오차 방지)
   description: text('description'), // 메모/상세 내용
   date: timestamp('date').defaultNow().notNull(), // 지출 발생 일자 (일별/월별 집계의 기준)
-  categoryId: integer('category_id').references(() => categories.id, { onDelete: 'set null' }),
-  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }),
+  categoryId: integer('category_id').references(() => categories.id, {
+    onDelete: 'set null',
+  }),
+  userId: uuid('user_id').references(() => profiles.id, {
+    onDelete: 'cascade',
+  }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 4. 예산 설정 (차트에서 예산 대비 지출 확인용)
-export const budgets = pgTable('budgets', {
-  id: serial('id').primaryKey(),
-  amount: integer('amount').notNull(),
-  month: integer('month').notNull(), // 1 ~ 12
-  year: integer('year').notNull(),
-  categoryId: integer('category_id').references(() => categories.id, { onDelete: 'cascade' }),
-  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }),
-});
+// 4. 예산 설정 (카테고리별 월 예산 한도)
+export const budgets = pgTable(
+  'budgets',
+  {
+    id: serial('id').primaryKey(),
+    amount: integer('amount').notNull(), // 예산 금액 (원 단위 정수)
+    month: integer('month').notNull(), // 1 ~ 12
+    year: integer('year').notNull(), // ex) 2025
+    categoryId: integer('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => ({
+    // 한 유저의 동일 카테고리에 같은 달 예산은 1개만 허용
+    uniquePerMonth: unique('budgets_user_category_month_unique').on(
+      table.userId,
+      table.categoryId,
+      table.month,
+      table.year
+    ),
+  })
+);

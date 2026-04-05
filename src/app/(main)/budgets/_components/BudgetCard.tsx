@@ -1,24 +1,55 @@
+import {
+  BookOpen,
+  Banknote,
+  Car,
+  Gift,
+  Heart,
+  Home,
+  MoreHorizontal,
+  Music,
+  Pencil,
+  ShoppingBag,
+  Smartphone,
+  TrendingUp,
+  Trash2,
+  Utensils,
+  type LucideProps,
+} from 'lucide-react';
 import { type ElementType } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { BudgetWithSpending } from '@/lib/api/budgets';
+
+const ICON_MAP: Record<string, ElementType<LucideProps>> = {
+  utensils: Utensils,
+  car: Car,
+  home: Home,
+  smartphone: Smartphone,
+  'shopping-bag': ShoppingBag,
+  heart: Heart,
+  'book-open': BookOpen,
+  music: Music,
+  briefcase: Banknote,
+  gift: Gift,
+  'trending-up': TrendingUp,
+};
 
 export function BudgetCard({
-  icon: Icon,
-  iconBg,
-  category,
   budget,
-  spent,
-  color,
+  colorFallback,
+  onEdit,
+  onDelete,
 }: {
-  icon: ElementType;
-  iconBg: string;
-  category: string;
-  budget: number;
-  spent: number;
-  color: string;
+  budget: BudgetWithSpending;
+  colorFallback: string;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
-  const percentage = Math.min((spent / budget) * 100, 100);
-  const remaining = budget - spent;
-  const isOverBudget = spent > budget;
+  const color = budget.category_color ?? colorFallback;
+  const percentage = Math.min(
+    (budget.spent_amount / budget.budget_amount) * 100,
+    100
+  );
+  const remaining = budget.budget_amount - budget.spent_amount;
+  const isOver = budget.spent_amount > budget.budget_amount;
 
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -26,21 +57,35 @@ export function BudgetCard({
         <div className="flex items-center gap-3">
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: iconBg }}
+            style={{ backgroundColor: color }}
           >
-            <Icon className="w-6 h-6 text-white" />
+            {(() => {
+              const Icon =
+                (budget.category_icon
+                  ? ICON_MAP[budget.category_icon]
+                  : null) ?? MoreHorizontal;
+              return <Icon className="w-6 h-6 text-white" />;
+            })()}
           </div>
           <div>
-            <h3 className="font-semibold text-slate-800">{category}</h3>
+            <h3 className="font-semibold text-slate-800">
+              {budget.category_name}
+            </h3>
             <p className="text-sm text-slate-500">월 예산</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            onClick={onEdit}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
             <Pencil className="w-4 h-4 text-slate-400" />
           </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Trash2 className="w-4 h-4 text-slate-400" />
+          <button
+            onClick={onDelete}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-500" />
           </button>
         </div>
       </div>
@@ -48,26 +93,28 @@ export function BudgetCard({
       <div className="flex justify-between items-end mb-3">
         <div>
           <p className="text-2xl font-bold text-slate-800">
-            ₩{spent.toFixed(2)}
+            ₩{budget.spent_amount.toLocaleString('ko-KR')}
           </p>
-          <p className="text-sm text-slate-500">/ ₩{budget.toFixed(2)}</p>
+          <p className="text-sm text-slate-500">
+            / ₩{budget.budget_amount.toLocaleString('ko-KR')}
+          </p>
         </div>
         <div
-          className={`text-right ${isOverBudget ? 'text-red-500' : 'text-green-600'}`}
+          className={`text-right ${isOver ? 'text-red-500' : 'text-green-600'}`}
         >
-          <p className="text-sm font-medium">
-            {isOverBudget ? '초과' : '남음'}
+          <p className="text-sm font-medium">{isOver ? '초과' : '남음'}</p>
+          <p className="font-semibold">
+            ₩{Math.abs(remaining).toLocaleString('ko-KR')}
           </p>
-          <p className="font-semibold">₩{Math.abs(remaining).toFixed(2)}</p>
         </div>
       </div>
 
       <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${isOverBudget ? 'bg-red-500' : ''}`}
+          className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${isOver ? 'bg-red-500' : ''}`}
           style={{
             width: `${percentage}%`,
-            backgroundColor: isOverBudget ? undefined : color,
+            backgroundColor: isOver ? undefined : color,
           }}
         />
       </div>
