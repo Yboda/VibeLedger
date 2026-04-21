@@ -1,26 +1,86 @@
-export function SpendingTrendChart() {
-  const data = [
-    { month: '1월', income: 2100, expense: 1450 },
-    { month: '2월', income: 2200, expense: 1380 },
-    { month: '3월', income: 2150, expense: 1620 },
-    { month: '4월', income: 2300, expense: 1550 },
-    { month: '5월', income: 2250, expense: 1480 },
-    { month: '6월', income: 2400, expense: 1720 },
-    { month: '7월', income: 2350, expense: 1590 },
-    { month: '8월', income: 2500, expense: 1680 },
-    { month: '9월', income: 2450, expense: 1654 },
-    { month: '10월', income: 2300, expense: 1823 },
-    { month: '11월', income: 2400, expense: 1567 },
-    { month: '12월', income: 2293, expense: 618 },
-  ];
+'use client';
 
-  const maxValue = Math.max(...data.flatMap(d => [d.income, d.expense]));
+import Spinner from '@/components/common/Spinner';
+import {
+  useMonthlyTrendForAnalyticsQuery,
+  useTransactionsByRangeQuery,
+} from '../_api/useAnalyticsQuery';
+import { useAnalyticsPeriod } from '../_providers/analytics-period-context';
+
+// 주간 모드: 거래 데이터를 요일별로 집계
+function buildWeeklyData(
+  transactions: {
+    date: string;
+    amount: number;
+    categories: { type: string } | null;
+  }[],
+  startDate: string
+) {
+  const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
+  const incomeByDay = Array(7).fill(0);
+  const expenseByDay = Array(7).fill(0);
+
+  const weekStart = new Date(startDate);
+  for (const tx of transactions) {
+    const d = new Date(tx.date);
+    let diff = d.getDay() - 1; // 월=0, 일=6
+    if (diff < 0) diff = 6;
+    const type = tx.categories?.type;
+    if (type === 'INCOME') incomeByDay[diff] += tx.amount;
+    else if (type === 'EXPENSE') expenseByDay[diff] += tx.amount;
+  }
+
+  return DAY_LABELS.map((label, i) => ({
+    month: label,
+    income: incomeByDay[i],
+    expense: expenseByDay[i],
+  }));
+}
+
+export function SpendingTrendChart() {
+  const { period, startDate, endDate } = useAnalyticsPeriod();
+
+  // month/year → monthly trend API, week → raw transactions
+  const monthlyMonths = period === 'year' ? 12 : 6;
+  const { data: monthlyData = [], isLoading: monthlyLoading } =
+    useMonthlyTrendForAnalyticsQuery(monthlyMonths);
+
+  const { data: weekTxs = [], isLoading: weekLoading } =
+    useTransactionsByRangeQuery(startDate, endDate);
+
+  const isLoading = period === 'week' ? weekLoading : monthlyLoading;
+
+  let chartData: { month: string; income: number; expense: number }[] = [];
+  if (period === 'week') {
+    chartData = buildWeeklyData(
+      weekTxs.map(tx => ({
+        date: tx.date,
+        amount: tx.amount,
+        categories: tx.categories ? { type: tx.categories.type } : null,
+      })),
+      startDate
+    );
+  } else {
+    chartData = monthlyData;
+  }
+
+  const maxValue = Math.max(
+    1,
+    ...chartData.flatMap(d => [d.income, d.expense])
+  );
+
+  const periodLabel =
+    period === 'week'
+      ? '요일별'
+      : period === 'year'
+        ? '연간 월별'
+        : '최근 6개월';
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-slate-800">
-          수입 vs 지출 추이
+          수입 vs 지출 추이 ({periodLabel})
         </h3>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -34,26 +94,32 @@ export function SpendingTrendChart() {
         </div>
       </div>
 
-      <div className="flex items-end gap-2 h-64">
-        {data.map((d, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1">
-            <div
-              className="w-full flex gap-1 items-end"
-              style={{ height: '220px' }}
-            >
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <Spinner size="sm" />
+        </div>
+      ) : (
+        <div className="flex items-end gap-2 h-64">
+          {chartData.map((d, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
               <div
-                className="flex-1 bg-[#FBBF24] rounded-t transition-all duration-300 hover:opacity-80"
-                style={{ height: `${(d.income / maxValue) * 100}%` }}
-              />
-              <div
-                className="flex-1 bg-[#F97354] rounded-t transition-all duration-300 hover:opacity-80"
-                style={{ height: `${(d.expense / maxValue) * 100}%` }}
-              />
+                className="w-full flex gap-1 items-end"
+                style={{ height: '220px' }}
+              >
+                <div
+                  className="flex-1 bg-[#FBBF24] rounded-t transition-all duration-300 hover:opacity-80"
+                  style={{ height: `${(d.income / maxValue) * 100}%` }}
+                />
+                <div
+                  className="flex-1 bg-[#F97354] rounded-t transition-all duration-300 hover:opacity-80"
+                  style={{ height: `${(d.expense / maxValue) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-500">{d.month}</p>
             </div>
-            <p className="text-xs text-slate-500">{d.month}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

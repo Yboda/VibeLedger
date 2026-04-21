@@ -11,6 +11,7 @@ import { MonthlySpendingTrend } from './_components/MonthlySpendingTrend';
 import { BudgetStatus } from './_components/BudgetStatus';
 import { RecentTransactions } from './_components/RecentTransactions';
 import { TopSpendingCategories } from './_components/TopSpendingCategories';
+import { useMonthlySummaryQuery } from '../transactions/_api/useMonthlySummaryQuery';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -21,6 +22,7 @@ function getGreeting() {
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState('');
+  const { data: summary, isLoading: summaryLoading } = useMonthlySummaryQuery();
 
   useEffect(() => {
     const supabase = createClient();
@@ -37,6 +39,9 @@ export default function DashboardPage() {
     showDate: true,
   });
 
+  const totalIncome = summary?.totalIncome ?? 0;
+  const totalExpense = summary?.totalExpense ?? 0;
+
   return (
     <>
       {/* Stats Row */}
@@ -44,12 +49,14 @@ export default function DashboardPage() {
         <TotalBalanceCard />
         <StatCard
           title="이번 달 수입"
-          value="₩2,293.31"
+          value={`+₩${totalIncome.toLocaleString('ko-KR')}`}
+          isLoading={summaryLoading}
           chart={<MiniLineChart color="var(--color-brand-yellow)" />}
         />
         <StatCard
           title="이번 달 지출"
-          value="₩384.90"
+          value={`-₩${totalExpense.toLocaleString('ko-KR')}`}
+          isLoading={summaryLoading}
           chart={<MiniLineChart color="var(--color-brand-navy)" />}
         />
         <SavingsGoalCard />

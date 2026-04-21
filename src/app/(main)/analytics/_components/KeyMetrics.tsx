@@ -1,84 +1,116 @@
+'use client';
+
+import { useMemo } from 'react';
 import { ArrowLeftRight, Home, TrendingDown, TrendingUp } from 'lucide-react';
+import Spinner from '@/components/common/Spinner';
+import { useTransactionsByRangeQuery } from '../_api/useAnalyticsQuery';
+import { useAnalyticsPeriod } from '../_providers/analytics-period-context';
+
+function getDayCount(startDate: string, endDate: string): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diff = end.getTime() - start.getTime();
+  return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
 
 export function KeyMetrics() {
-  const metrics = [
+  const { startDate, endDate } = useAnalyticsPeriod();
+  const { data: transactions = [], isLoading } = useTransactionsByRangeQuery(
+    startDate,
+    endDate
+  );
+
+  const metrics = useMemo(() => {
+    let totalIncome = 0;
+    let totalExpense = 0;
+    let maxExpense = 0;
+    let maxExpenseCategory = '-';
+    let expenseCount = 0;
+
+    for (const tx of transactions) {
+      const type = tx.categories?.type;
+      if (type === 'INCOME') {
+        totalIncome += tx.amount;
+      } else if (type === 'EXPENSE') {
+        totalExpense += tx.amount;
+        expenseCount++;
+        if (tx.amount > maxExpense) {
+          maxExpense = tx.amount;
+          maxExpenseCategory = tx.categories?.name ?? '-';
+        }
+      }
+    }
+
+    const dayCount = getDayCount(startDate, endDate);
+    const avgDailyExpense = totalExpense / dayCount;
+    const savingsRate =
+      totalIncome > 0
+        ? Math.max(0, ((totalIncome - totalExpense) / totalIncome) * 100)
+        : 0;
+
+    return {
+      avgDailyExpense,
+      maxExpense,
+      maxExpenseCategory,
+      savingsRate,
+      expenseCount,
+    };
+  }, [transactions, startDate, endDate]);
+
+  const cards = [
     {
       label: '평균 일일 지출',
-      value: '₩27.45',
-      change: '-12%',
-      isPositive: true,
+      value: `₩${Math.floor(metrics.avgDailyExpense).toLocaleString('ko-KR')}`,
       icon: TrendingDown,
-      description: '지난 달 대비',
+      colorClass: 'bg-green-100',
+      iconColor: 'text-green-600',
     },
     {
-      label: '가장 큰 지출',
-      value: '₩350.00',
-      subLabel: '주거비 (월세)',
+      label: '최대 단일 지출',
+      value: `₩${metrics.maxExpense.toLocaleString('ko-KR')}`,
+      subLabel: metrics.maxExpenseCategory,
       icon: Home,
-      description: '이번 달',
+      colorClass: 'bg-red-100',
+      iconColor: 'text-red-600',
     },
     {
       label: '저축률',
-      value: '72.3%',
-      change: '+8%',
-      isPositive: true,
+      value: `${metrics.savingsRate.toFixed(1)}%`,
+      subLabel: '수입 대비',
       icon: TrendingUp,
-      description: '수입 대비 저축',
+      colorClass: 'bg-yellow-100',
+      iconColor: 'text-yellow-600',
     },
     {
-      label: '거래 건수',
-      value: '47건',
-      change: '-5건',
-      isPositive: true,
+      label: '지출 건수',
+      value: `${metrics.expenseCount}건`,
       icon: ArrowLeftRight,
-      description: '이번 달',
+      colorClass: 'bg-blue-100',
+      iconColor: 'text-blue-600',
     },
   ];
 
   return (
     <div className="grid grid-cols-4 gap-4 mb-6">
-      {metrics.map((metric, index) => (
+      {cards.map((card, index) => (
         <div key={index} className="bg-white rounded-xl p-5 shadow-sm">
           <div className="flex items-start justify-between mb-3">
             <div
-              className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                index === 0
-                  ? 'bg-green-100'
-                  : index === 1
-                    ? 'bg-red-100'
-                    : index === 2
-                      ? 'bg-yellow-100'
-                      : 'bg-blue-100'
-              }`}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center ${card.colorClass}`}
             >
-              <metric.icon
-                className={`w-5 h-5 ${
-                  index === 0
-                    ? 'text-green-600'
-                    : index === 1
-                      ? 'text-red-600'
-                      : index === 2
-                        ? 'text-yellow-600'
-                        : 'text-blue-600'
-                }`}
-              />
+              <card.icon className={`w-5 h-5 ${card.iconColor}`} />
             </div>
-            {metric.change && (
-              <span
-                className={`text-xs font-medium px-2 py-1 rounded-full ${
-                  metric.isPositive
-                    ? 'bg-green-100 text-green-600'
-                    : 'bg-red-100 text-red-600'
-                }`}
-              >
-                {metric.change}
-              </span>
-            )}
           </div>
-          <p className="text-2xl font-bold text-slate-800">{metric.value}</p>
-          <p className="text-sm text-slate-500">{metric.label}</p>
-          {metric.subLabel && (
-            <p className="text-xs text-slate-400 mt-1">{metric.subLabel}</p>
+          {isLoading ? (
+            <Spinner size="sm" />
+          ) : (
+            <>
+              <p className="text-2xl font-bold text-slate-800">{card.value}</p>
+              <p className="text-sm text-slate-500">{card.label}</p>
+              {card.subLabel && (
+                <p className="text-xs text-slate-400 mt-0.5">{card.subLabel}</p>
+              )}
+            </>
           )}
         </div>
       ))}

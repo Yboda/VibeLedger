@@ -167,28 +167,30 @@ export async function fetchRecentTransactions(
   return (data as unknown as Transaction[]) ?? [];
 }
 
-export async function fetchCategorySpending(): Promise<CategorySpending[]> {
+export async function fetchCategorySpending(
+  startDate?: string,
+  endDate?: string
+): Promise<CategorySpending[]> {
   const supabase = createClient();
   const now = new Date();
-  const startOfMonth = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    1
-  ).toISOString();
-  const endOfMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-    23,
-    59,
-    59
-  ).toISOString();
+  const from =
+    startDate ?? new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const to =
+    endDate ??
+    new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59
+    ).toISOString();
 
   const { data, error } = await supabase
     .from('transactions')
     .select('amount, categories(id, name, color, icon, type)')
-    .gte('date', startOfMonth)
-    .lte('date', endOfMonth);
+    .gte('date', from)
+    .lte('date', to);
 
   if (error) throw new Error(error.message);
 
@@ -219,6 +221,38 @@ export async function fetchCategorySpending(): Promise<CategorySpending[]> {
   return Array.from(map.values())
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
+}
+
+// 특정 날짜 범위 내 거래 전체 조회 (Analytics 집계용)
+export interface RawTransaction {
+  id: number;
+  amount: number;
+  date: string;
+  description: string | null;
+  categories: {
+    id: number;
+    name: string;
+    type: TransactionType;
+    color: string | null;
+    icon: string | null;
+  } | null;
+}
+
+export async function fetchTransactionsByRange(
+  startDate: string,
+  endDate: string
+): Promise<RawTransaction[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('transactions')
+    .select(
+      'id, amount, date, description, categories(id, name, type, color, icon)'
+    )
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data as unknown as RawTransaction[]) ?? [];
 }
 
 export interface MonthlyTrend {
