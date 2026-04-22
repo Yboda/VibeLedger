@@ -11,5 +11,8 @@ declare namespace NodeJS {
     // Next.js
     NEXT_PUBLIC_APP_URL: string;
     NODE_ENV: 'development' | 'production' | 'test';
+
+    // LLM (Google Gemini)
+    GEMINI_API_KEY: string;
   }
 }
