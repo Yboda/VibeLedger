@@ -13,7 +13,31 @@ export interface ParseTransactionResult {
   error: string | null;
 }
 
-const SYSTEM_INSTRUCTION = `당신은 사용자의 가계부 입력 문장을 분석해 JSON으로 변환하는 전문가입니다.
+export interface FinancialSummary {
+  periodLabel: string;
+  today: string; // "YYYY-MM-DD" — 오늘 날짜 (분석 데이터의 실제 마지막 날)
+  periodEnd: string; // "YYYY-MM-DD" — 선택한 기간의 마지막 날 (미래일 수 있음)
+  totalIncome: number;
+  totalExpense: number;
+  savingsRate: number; // percentage, e.g. 23.5
+  categoryBreakdown: { name: string; amount: number }[]; // 지출 카테고리, 금액 내림차순
+  overBudgetCategories: { name: string; budget: number; spent: number }[];
+  transactionCount: number;
+  weekendExpenseRatio: number; // 0~1 (주말 지출 / 전체 지출, 오늘까지의 데이터 기준)
+}
+
+export interface InsightItem {
+  type: 'positive' | 'warning' | 'info';
+  title: string;
+  description: string;
+}
+
+export interface GenerateInsightsResult {
+  data: InsightItem[] | null;
+  error: string | null;
+}
+
+const PARSE_SYSTEM_INSTRUCTION = `당신은 사용자의 가계부 입력 문장을 분석해 JSON으로 변환하는 전문가입니다.
 사용자가 자연어로 지출/수입 내역을 입력하면, 아래 JSON 형식으로만 응답하세요.
 
 응답 형식:
@@ -33,14 +57,40 @@ const SYSTEM_INSTRUCTION = `당신은 사용자의 가계부 입력 문장을 �
 - 수입/입금/월급/용돈 관련 표현이면 type을 "INCOME"으로, 나머지는 "EXPENSE"로 설정
 - JSON 이외의 텍스트, 마크다운 코드블록 등은 절대 출력하지 마세요`;
 
+const INSIGHTS_SYSTEM_INSTRUCTION = `당신은 개인 재정 분석 전문가입니다.
+사용자의 가계부 데이터를 분석해 실용적인 인사이트 3가지를 제공해주세요.
+
+응답은 반드시 아래 JSON 배열 형식으로만 출력하세요:
+[
+  {
+    "type": "positive" | "warning" | "info",
+    "title": "제목 (15자 이내)",
+    "description": "설명 (100자 이내, 구체적인 수치 포함)"
+  }
+]
+
+규칙:
+- 반드시 3개의 인사이트를 제공
+- type: positive(긍정/칭찬), warning(주의/위험), info(유용한 팁/패턴)
+- 한국어로 친근하고 따뜻한 어조로 작성
+- 수치를 구체적으로 언급 (예: "식비 지출이 예산의 120%")
+- 프롬프트에 "오늘 날짜"와 "기간 종료일"이 제공된다. 오늘 이후 날짜는 아직 데이터가 없으므로, 미래 날짜에 대한 평가·추론·칭찬을 절대 하지 마세요
+- 예: 이번 주가 아직 수요일이라면 목~일요일 지출은 알 수 없으므로 "주말 지출 제로" 같은 평가를 하면 안 됩니다
+- JSON 이외의 텍스트, 마크다운 코드블록 출력 금지`;
+
 // SDK 없이 직접 REST API 호출 — API 버전과 모델을 명확히 제어
-async function callGeminiRest(apiKey: string, prompt: string): Promise<string> {
+async function callGeminiRest(
+  apiKey: string,
+  systemInstruction: string,
+  prompt: string,
+  options?: { temperature?: number; maxOutputTokens?: number }
+): Promise<string> {
   const model = 'gemini-2.5-flash-lite';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const body = {
     system_instruction: {
-      parts: [{ text: SYSTEM_INSTRUCTION }],
+      parts: [{ text: systemInstruction }],
     },
     contents: [
       {
@@ -49,8 +99,8 @@ async function callGeminiRest(apiKey: string, prompt: string): Promise<string> {
     ],
     generationConfig: {
       responseMimeType: 'application/json',
-      temperature: 0.1,
-      maxOutputTokens: 300,
+      temperature: options?.temperature ?? 0.1,
+      maxOutputTokens: options?.maxOutputTokens ?? 300,
     },
   };
 
@@ -122,7 +172,7 @@ export async function parseTransactionText(
 입력 문장: "${text}"`;
 
   try {
-    const raw = await callGeminiRest(apiKey, prompt);
+    const raw = await callGeminiRest(apiKey, PARSE_SYSTEM_INSTRUCTION, prompt);
     const parsed = JSON.parse(raw) as Partial<ParsedTransaction>;
 
     if (
@@ -159,6 +209,95 @@ export async function parseTransactionText(
     return {
       data: null,
       error: 'AI 파싱 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+    };
+  }
+}
+
+export async function generateInsights(
+  summary: FinancialSummary
+): Promise<GenerateInsightsResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return { data: null, error: 'GEMINI_API_KEY가 설정되지 않았습니다.' };
+  }
+
+  const topCategories =
+    summary.categoryBreakdown
+      .slice(0, 5)
+      .map(c => `${c.name}: ₩${c.amount.toLocaleString('ko-KR')}`)
+      .join(', ') || '데이터 없음';
+
+  const overBudgetText =
+    summary.overBudgetCategories.length > 0
+      ? summary.overBudgetCategories
+          .map(
+            b =>
+              `${b.name}(예산 ₩${b.budget.toLocaleString('ko-KR')}, 실제 ₩${b.spent.toLocaleString('ko-KR')})`
+          )
+          .join(', ')
+      : '없음';
+
+  const isPeriodComplete = summary.today >= summary.periodEnd;
+  const periodNote = isPeriodComplete
+    ? `기간이 완료된 데이터입니다.`
+    : `⚠️ 기간 진행 중: 오늘(${summary.today})까지의 데이터만 존재합니다. 기간 종료일(${summary.periodEnd}) 이후 날짜는 아직 기록이 없으니, 그 날짜들에 대한 평가를 하지 마세요.`;
+
+  const prompt = `오늘 날짜: ${summary.today}
+분석 기간: ${summary.periodLabel} (${summary.today} ~ ${summary.periodEnd})
+${periodNote}
+
+재정 요약 (오늘까지 실제 기록된 데이터):
+- 총 수입: ₩${summary.totalIncome.toLocaleString('ko-KR')}
+- 총 지출: ₩${summary.totalExpense.toLocaleString('ko-KR')}
+- 저축률: ${summary.savingsRate.toFixed(1)}%
+- 거래 건수: ${summary.transactionCount}건
+- 주말 지출 비율: ${(summary.weekendExpenseRatio * 100).toFixed(1)}% (오늘까지 지나간 주말 기준)
+
+카테고리별 주요 지출 (내림차순):
+${topCategories}
+
+예산 초과 카테고리:
+${overBudgetText}
+
+위 데이터를 분석해 인사이트 3가지를 JSON 배열로 반환하세요.`;
+
+  try {
+    const raw = await callGeminiRest(
+      apiKey,
+      INSIGHTS_SYSTEM_INSTRUCTION,
+      prompt,
+      { temperature: 0.7, maxOutputTokens: 600 }
+    );
+
+    const parsed = JSON.parse(raw) as InsightItem[];
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return { data: null, error: '인사이트 생성에 실패했습니다.' };
+    }
+
+    const validated = parsed
+      .filter(
+        item =>
+          (item.type === 'positive' ||
+            item.type === 'warning' ||
+            item.type === 'info') &&
+          typeof item.title === 'string' &&
+          typeof item.description === 'string'
+      )
+      .slice(0, 3);
+
+    return { data: validated, error: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+
+    if (message.startsWith('API_QUOTA:') || message.startsWith('API_BUSY:')) {
+      return { data: null, error: message.replace(/^API_\w+: /, '') };
+    }
+
+    console.error('Gemini insights error:', message);
+    return {
+      data: null,
+      error: 'AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     };
   }
 }

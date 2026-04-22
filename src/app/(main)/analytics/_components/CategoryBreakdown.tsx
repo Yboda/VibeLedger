@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactElement } from 'react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   BookOpen,
   Banknote,
@@ -35,6 +35,50 @@ const ICON_MAP: Record<string, ElementType<LucideProps>> = {
   'trending-up': TrendingUp,
 };
 
+const DONUT_COLORS = [
+  '#F97354',
+  '#3B82F6',
+  '#10B981',
+  '#F59E0B',
+  '#8B5CF6',
+  '#EC4899',
+  '#06B6D4',
+  '#84CC16',
+];
+
+function formatAmount(amount: number): string {
+  if (amount >= 100_000_000) return `${(amount / 100_000_000).toFixed(1)}억`;
+  if (amount >= 10_000)
+    return `${(amount / 10_000) % 1 === 0 ? amount / 10_000 : (amount / 10_000).toFixed(1)}만`;
+  return amount.toLocaleString('ko-KR');
+}
+
+interface ChartItem {
+  name: string;
+  value: number;
+  color: string;
+  totalForPct: number;
+}
+
+interface DonutTooltipProps {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; payload: ChartItem }>;
+}
+
+function DonutTooltip({ active, payload }: DonutTooltipProps) {
+  if (!active || !payload?.length || !payload[0]) return null;
+  const { name, value, payload: raw } = payload[0];
+  const pct =
+    raw.totalForPct > 0 ? ((value / raw.totalForPct) * 100).toFixed(1) : '0.0';
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-md px-3 py-2 text-sm pointer-events-none">
+      <p className="font-semibold text-slate-700 mb-0.5">{name}</p>
+      <p className="text-slate-500">₩{value.toLocaleString('ko-KR')}</p>
+      <p className="text-slate-400 text-xs">{pct}%</p>
+    </div>
+  );
+}
+
 export function CategoryBreakdown() {
   const { startDate, endDate } = useAnalyticsPeriod();
   const { data: categories = [], isLoading } = useCategorySpendingByRangeQuery(
@@ -44,92 +88,90 @@ export function CategoryBreakdown() {
 
   const total = categories.reduce((sum, c) => sum + c.total, 0);
 
+  const chartData: ChartItem[] = categories.map((cat, i) => ({
+    name: cat.name,
+    value: cat.total,
+    color: cat.color ?? DONUT_COLORS[i % DONUT_COLORS.length] ?? '#6B7280',
+    totalForPct: total,
+  }));
+
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm">
-      <h3 className="text-lg font-semibold text-slate-800 mb-4">
+    <div className="bg-white rounded-xl p-6 shadow-sm h-full flex flex-col">
+      <h3 className="text-lg font-semibold text-slate-800 mb-4 shrink-0">
         카테고리별 지출
       </h3>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-48">
+        <div className="flex-1 flex items-center justify-center">
           <Spinner size="sm" />
         </div>
       ) : categories.length === 0 ? (
-        <div className="flex items-center justify-center h-48">
+        <div className="flex-1 flex items-center justify-center">
           <p className="text-slate-400 text-sm">
             해당 기간에 지출 내역이 없습니다.
           </p>
         </div>
       ) : (
-        <div className="flex items-center gap-8">
-          {/* 도넛 차트 */}
-          <div className="relative w-48 h-48 shrink-0">
-            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-              {
-                categories.reduce(
-                  (acc, cat, i) => {
-                    const startAngle = acc.offset;
-                    const angle = total > 0 ? (cat.total / total) * 360 : 0;
-                    const endAngle = startAngle + angle;
+        <>
+          {/* 도넛 차트 (Recharts) — 중앙 금액 오버레이 */}
+          <div className="relative shrink-0" style={{ height: 160 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="45%"
+                  outerRadius="70%"
+                  dataKey="value"
+                  nameKey="name"
+                  paddingAngle={categories.length > 1 ? 2 : 0}
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  {chartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  content={<DonutTooltip />}
+                  wrapperStyle={{ zIndex: 10 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
 
-                    const startRad = (startAngle * Math.PI) / 180;
-                    const endRad = (endAngle * Math.PI) / 180;
-
-                    const x1 = 50 + 40 * Math.cos(startRad);
-                    const y1 = 50 + 40 * Math.sin(startRad);
-                    const x2 = 50 + 40 * Math.cos(endRad);
-                    const y2 = 50 + 40 * Math.sin(endRad);
-
-                    const largeArc = angle > 180 ? 1 : 0;
-
-                    acc.paths.push(
-                      <path
-                        key={i}
-                        d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                        fill={cat.color ?? '#6B7280'}
-                        className="hover:opacity-80 transition-opacity cursor-pointer"
-                      />
-                    );
-
-                    acc.offset = endAngle;
-                    return acc;
-                  },
-                  { paths: [] as ReactElement[], offset: 0 }
-                ).paths
-              }
-              <circle cx="50" cy="50" r="25" fill="white" />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-2xl font-bold text-slate-800">
-                ₩{total.toLocaleString('ko-KR')}
+            {/* 중앙 총 지출 텍스트 */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <p className="text-base font-bold text-slate-800 leading-tight">
+                ₩{formatAmount(total)}
               </p>
               <p className="text-xs text-slate-500">총 지출</p>
             </div>
           </div>
 
-          {/* 목록 */}
-          <div className="flex-1 space-y-3">
+          {/* 카테고리 목록 */}
+          <div className="flex-1 min-h-0 space-y-2.5 overflow-y-auto pr-1 mt-4">
             {categories.map((cat, i) => {
+              const color =
+                cat.color ?? DONUT_COLORS[i % DONUT_COLORS.length] ?? '#6B7280';
               const percentage = total > 0 ? (cat.total / total) * 100 : 0;
+              const Icon =
+                (cat.icon ? ICON_MAP[cat.icon] : null) ?? MoreHorizontal;
+
               return (
                 <div key={i} className="flex items-center gap-3">
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: cat.color ?? '#6B7280' }}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: color }}
                   >
-                    {(() => {
-                      const Icon =
-                        (cat.icon ? ICON_MAP[cat.icon] : null) ??
-                        MoreHorizontal;
-                      return <Icon className="w-4 h-4 text-white" />;
-                    })()}
+                    <Icon className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-slate-700">
+                      <span className="text-sm font-medium text-slate-700 truncate">
                         {cat.name}
                       </span>
-                      <span className="text-sm font-semibold text-slate-800">
+                      <span className="text-sm font-semibold text-slate-800 ml-2 shrink-0">
                         ₩{cat.total.toLocaleString('ko-KR')}
                       </span>
                     </div>
@@ -138,16 +180,19 @@ export function CategoryBreakdown() {
                         className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${percentage}%`,
-                          backgroundColor: cat.color ?? '#6B7280',
+                          backgroundColor: color,
                         }}
                       />
                     </div>
                   </div>
+                  <span className="text-xs text-slate-400 w-9 text-right shrink-0">
+                    {percentage.toFixed(0)}%
+                  </span>
                 </div>
               );
             })}
           </div>
-        </div>
+        </>
       )}
     </div>
   );
