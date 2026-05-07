@@ -50,6 +50,7 @@ export function BudgetCard({
   );
   const remaining = budget.budget_amount - budget.spent_amount;
   const isOver = budget.spent_amount > budget.budget_amount;
+  const isNearLimit = !isOver && percentage >= 80;
 
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -122,6 +123,17 @@ export function BudgetCard({
       <p className="text-xs text-slate-500 mt-2 text-right">
         {percentage.toFixed(0)}% 사용
       </p>
+      {(isNearLimit || isOver) && (
+        <p
+          className={`mt-3 rounded-lg px-3 py-2 text-xs font-medium ${
+            isOver ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700'
+          }`}
+        >
+          {isOver
+            ? '예산을 초과했습니다. 다음 지출 전에 조정이 필요해요.'
+            : '예산의 80% 이상을 사용했습니다. 남은 지출을 점검해보세요.'}
+        </p>
+      )}
     </div>
   );
 }

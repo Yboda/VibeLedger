@@ -1,4 +1,8 @@
 import { createClient } from '@/lib/supabase/client';
+import {
+  budgetRowsSchema,
+  type ValidBudgetRow,
+} from '@/lib/validations/budget';
 
 export interface BudgetWithSpending {
   budget_id: number;
@@ -27,6 +31,11 @@ export async function fetchBudgetsWithSpending(
   year: number
 ): Promise<BudgetWithSpending[]> {
   const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('로그인이 필요합니다.');
+
   const { data, error } = await supabase.rpc('get_budget_with_spending', {
     target_month: month,
     target_year: year,
@@ -45,13 +54,20 @@ export async function fetchBudgetsWithSpending(
 
 export async function upsertBudgets(rows: BudgetRow[]): Promise<void> {
   const supabase = createClient();
+  const parsed = budgetRowsSchema.safeParse(rows);
+  if (!parsed.success) {
+    throw new Error(
+      parsed.error.issues[0]?.message ?? '예산 입력값이 올바르지 않습니다.'
+    );
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error('로그인이 필요합니다.');
 
   const { error } = await supabase.from('budgets').upsert(
-    rows.map(r => ({ ...r, user_id: user.id })),
+    parsed.data.map((r: ValidBudgetRow) => ({ ...r, user_id: user.id })),
     { onConflict: 'user_id,category_id,month,year' }
   );
   if (error) throw new Error(error.message);
@@ -59,7 +75,16 @@ export async function upsertBudgets(rows: BudgetRow[]): Promise<void> {
 
 export async function deleteBudget(id: number): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase.from('budgets').delete().eq('id', id);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('로그인이 필요합니다.');
+
+  const { error } = await supabase
+    .from('budgets')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
   if (error) throw new Error(error.message);
 }
 
@@ -67,6 +92,11 @@ export async function fetchMonthlyBudgetTotals(
   months = 6
 ): Promise<MonthlyBudgetTotal[]> {
   const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('로그인이 필요합니다.');
+
   const now = new Date();
 
   const slots = Array.from({ length: months }, (_, i) => {
@@ -83,6 +113,7 @@ export async function fetchMonthlyBudgetTotals(
   const { data, error } = await supabase
     .from('budgets')
     .select('year, month, amount')
+    .eq('user_id', user.id)
     .in('year', years);
 
   if (error) throw new Error(error.message);

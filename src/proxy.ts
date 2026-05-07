@@ -18,9 +18,9 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value)
-          );
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
           response = NextResponse.next({
             request: {
               headers: request.headers,
@@ -41,15 +41,17 @@ export async function proxy(request: NextRequest) {
 
   // 3. 리다이렉트 로직
   const { pathname } = request.nextUrl;
-  const AUTH_ROUTES = [
+  const PUBLIC_ROUTES = [
+    '/auth/callback',
     '/login',
     '/signup',
+    '/signup/verify-email',
     '/forgot-password',
     '/update-password',
   ];
-  const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
 
-  if (!user && !isAuthRoute) {
+  if (!user && !isPublicRoute) {
     // 로그인 안 됐는데 보호된 페이지 가려고 하면 로그인으로
     return NextResponse.redirect(new URL('/login', request.url));
   }

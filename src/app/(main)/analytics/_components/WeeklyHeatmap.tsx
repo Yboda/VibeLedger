@@ -8,9 +8,8 @@ import { useAnalyticsPeriod } from '../_providers/analytics-period-context';
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 
 // 날짜를 주차(0-based)와 요일(0=월 ~ 6=일)로 변환
-function getWeekAndDay(dateStr: string, monthStart: Date) {
+function getWeekAndDay(dateStr: string) {
   const d = new Date(dateStr);
-  const startMonday = new Date(monthStart);
   // 해당 월 1일의 요일 기준 주차 시작
   const dayOfWeek = d.getDay(); // 0=일, 1=월, ..., 6=토
   const weekDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 0=월, 6=일
@@ -66,7 +65,7 @@ export function WeeklyHeatmap() {
 
     for (const tx of transactions) {
       if (tx.categories?.type !== 'EXPENSE') continue;
-      const { weekIndex, weekDay } = getWeekAndDay(tx.date, monthStart);
+      const { weekIndex, weekDay } = getWeekAndDay(tx.date);
       const row = grid[weekIndex];
       if (weekIndex >= 0 && weekIndex < totalWeeks && row !== undefined) {
         row[weekDay] = (row[weekDay] ?? 0) + tx.amount;

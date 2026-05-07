@@ -13,14 +13,12 @@ function buildWeeklyData(
     date: string;
     amount: number;
     categories: { type: string } | null;
-  }[],
-  startDate: string
+  }[]
 ) {
   const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
   const incomeByDay = Array(7).fill(0);
   const expenseByDay = Array(7).fill(0);
 
-  const weekStart = new Date(startDate);
   for (const tx of transactions) {
     const d = new Date(tx.date);
     let diff = d.getDay() - 1; // 월=0, 일=6
@@ -57,8 +55,7 @@ export function SpendingTrendChart() {
         date: tx.date,
         amount: tx.amount,
         categories: tx.categories ? { type: tx.categories.type } : null,
-      })),
-      startDate
+      }))
     );
   } else {
     chartData = monthlyData;

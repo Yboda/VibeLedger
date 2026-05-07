@@ -45,7 +45,7 @@ export default function DashboardPage() {
   return (
     <>
       {/* Stats Row */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
         <TotalBalanceCard />
         <StatCard
           title="이번 달 수입"
@@ -63,13 +63,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
         <MonthlySpendingTrend />
         <BudgetStatus />
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <RecentTransactions />
         <TopSpendingCategories />
       </div>

@@ -1,5 +1,11 @@
 'use server';
 
+import { createClient } from '@/lib/supabase/server';
+import {
+  insightItemsSchema,
+  parsedTransactionSchema,
+} from '@/lib/validations/llm';
+
 export interface ParsedTransaction {
   amount: number;
   date: string; // "YYYY-MM-DD"
@@ -35,6 +41,33 @@ export interface InsightItem {
 export interface GenerateInsightsResult {
   data: InsightItem[] | null;
   error: string | null;
+}
+
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+const llmRequestLog = new Map<string, number[]>();
+
+async function getAuthenticatedUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
+function isRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const recent = (llmRequestLog.get(userId) ?? []).filter(
+    timestamp => now - timestamp < RATE_LIMIT_WINDOW_MS
+  );
+
+  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
+    llmRequestLog.set(userId, recent);
+    return true;
+  }
+
+  llmRequestLog.set(userId, [...recent, now]);
+  return false;
 }
 
 const PARSE_SYSTEM_INSTRUCTION = `당신은 사용자의 가계부 입력 문장을 분석해 JSON으로 변환하는 전문가입니다.
@@ -138,15 +171,11 @@ async function callGeminiRest(
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('Gemini 응답이 비어있습니다.');
 
-  console.log('[Gemini 원본 응답]', text);
-
   // 모델이 responseMimeType 설정에도 마크다운 코드블록으로 감싸는 경우 제거
   const cleaned = text
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/\s*```\s*$/i, '')
     .trim();
-
-  console.log('[Gemini 파싱 대상]', cleaned);
 
   return cleaned;
 }
@@ -156,12 +185,26 @@ export async function parseTransactionText(
   categoryNames: string[],
   categoryTypes: Record<string, 'EXPENSE' | 'INCOME'>
 ): Promise<ParseTransactionResult> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    return { data: null, error: '로그인이 필요합니다.' };
+  }
+  if (isRateLimited(userId)) {
+    return {
+      data: null,
+      error: 'AI 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+    };
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return { data: null, error: 'GEMINI_API_KEY가 설정되지 않았습니다.' };
   }
   if (!text.trim()) {
     return { data: null, error: '입력 내용이 없습니다.' };
+  }
+  if (categoryNames.length === 0) {
+    return { data: null, error: '사용 가능한 카테고리가 없습니다.' };
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -173,28 +216,33 @@ export async function parseTransactionText(
 
   try {
     const raw = await callGeminiRest(apiKey, PARSE_SYSTEM_INSTRUCTION, prompt);
-    const parsed = JSON.parse(raw) as Partial<ParsedTransaction>;
+    const parsed = parsedTransactionSchema.safeParse(JSON.parse(raw));
 
-    if (
-      typeof parsed.amount !== 'number' ||
-      parsed.amount <= 0 ||
-      !parsed.date ||
-      !parsed.categoryName ||
-      !parsed.type
-    ) {
+    if (!parsed.success) {
       return {
         data: null,
         error: '파싱 결과가 올바르지 않습니다. 다시 입력해보세요.',
       };
     }
 
+    const parsedData = parsed.data;
+    if (
+      !categoryNames.includes(parsedData.categoryName) ||
+      categoryTypes[parsedData.categoryName] !== parsedData.type
+    ) {
+      return {
+        data: null,
+        error: 'AI가 선택한 카테고리가 올바르지 않습니다. 다시 입력해보세요.',
+      };
+    }
+
     return {
       data: {
-        amount: Math.round(parsed.amount),
-        date: parsed.date,
-        description: parsed.description ?? '',
-        categoryName: parsed.categoryName,
-        type: parsed.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
+        amount: parsedData.amount,
+        date: parsedData.date,
+        description: parsedData.description,
+        categoryName: parsedData.categoryName,
+        type: parsedData.type,
       },
       error: null,
     };
@@ -216,6 +264,17 @@ export async function parseTransactionText(
 export async function generateInsights(
   summary: FinancialSummary
 ): Promise<GenerateInsightsResult> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    return { data: null, error: '로그인이 필요합니다.' };
+  }
+  if (isRateLimited(userId)) {
+    return {
+      data: null,
+      error: 'AI 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+    };
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return { data: null, error: 'GEMINI_API_KEY가 설정되지 않았습니다.' };
@@ -269,24 +328,13 @@ ${overBudgetText}
       { temperature: 0.7, maxOutputTokens: 600 }
     );
 
-    const parsed = JSON.parse(raw) as InsightItem[];
+    const parsed = insightItemsSchema.safeParse(JSON.parse(raw));
 
-    if (!Array.isArray(parsed) || parsed.length === 0) {
+    if (!parsed.success) {
       return { data: null, error: '인사이트 생성에 실패했습니다.' };
     }
 
-    const validated = parsed
-      .filter(
-        item =>
-          (item.type === 'positive' ||
-            item.type === 'warning' ||
-            item.type === 'info') &&
-          typeof item.title === 'string' &&
-          typeof item.description === 'string'
-      )
-      .slice(0, 3);
-
-    return { data: validated, error: null };
+    return { data: parsed.data, error: null };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
 

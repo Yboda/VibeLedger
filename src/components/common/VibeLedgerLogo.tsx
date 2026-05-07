@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 interface VibeLedgerLogoProps {
   variant?: 'light' | 'dark';
   height?: string;
@@ -14,9 +16,12 @@ export default function VibeLedgerLogo({
 
   return (
     <div className="flex items-center justify-center">
-      <img
+      <Image
         src={src}
         alt="VibeLedger Logo"
+        width={220}
+        height={140}
+        priority
         className={`${height} w-auto${className ? ` ${className}` : ''}`}
       />
     </div>

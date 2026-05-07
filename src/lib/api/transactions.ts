@@ -1,4 +1,10 @@
 import { createClient } from '@/lib/supabase/client';
+import {
+  transactionInputSchema,
+  transactionUpdateSchema,
+  type ValidTransactionInput,
+  type ValidTransactionUpdate,
+} from '@/lib/validations/transaction';
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
 
@@ -36,10 +42,24 @@ export interface FetchTransactionsOptions {
   search?: string;
 }
 
+async function getCurrentUserId(): Promise<string | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
 export interface TransactionListResult {
   data: Transaction[];
   total: number;
   error: string | null;
+}
+
+export interface ExportTransactionsOptions {
+  type?: 'all' | TransactionType;
+  search?: string;
+  limit?: number;
 }
 
 export interface MonthlyTransactionSummary {
@@ -56,6 +76,9 @@ export async function fetchTransactions({
   search = '',
 }: FetchTransactionsOptions = {}): Promise<TransactionListResult> {
   const supabase = createClient();
+  const userId = await getCurrentUserId();
+  if (!userId) return { data: [], total: 0, error: '로그인이 필요합니다.' };
+
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -64,6 +87,7 @@ export async function fetchTransactions({
   let query = supabase
     .from('transactions')
     .select(`*, ${joinClause}`, { count: 'exact' })
+    .eq('user_id', userId)
     .order('date', { ascending: false })
     .range(from, to);
 
@@ -85,18 +109,49 @@ export async function fetchTransactions({
   };
 }
 
+export async function fetchTransactionsForExport({
+  type = 'all',
+  search = '',
+  limit = 5000,
+}: ExportTransactionsOptions = {}): Promise<Transaction[]> {
+  const supabase = createClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error('로그인이 필요합니다.');
+
+  const joinClause = type !== 'all' ? 'categories!inner(*)' : 'categories(*)';
+
+  let query = supabase
+    .from('transactions')
+    .select(`*, ${joinClause}`)
+    .eq('user_id', userId)
+    .order('date', { ascending: false })
+    .limit(limit);
+
+  if (type !== 'all') {
+    query = query.eq('categories.type', type);
+  }
+
+  if (search.trim()) {
+    query = query.ilike('description', `%${search.trim()}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data as unknown as Transaction[]) ?? [];
+}
+
 export interface CreateTransactionInput {
   amount: number;
   description: string | null;
   date: string;
-  category_id: number | null;
+  category_id: number;
 }
 
 export interface UpdateTransactionInput {
   amount?: number;
   description?: string | null;
   date?: string;
-  category_id?: number | null;
+  category_id?: number;
 }
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -114,6 +169,14 @@ export async function createTransaction(
   input: CreateTransactionInput
 ): Promise<{ data: Transaction | null; error: string | null }> {
   const supabase = createClient();
+  const parsed = transactionInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: parsed.error.issues[0]?.message ?? '입력값이 올바르지 않습니다.',
+    };
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -121,7 +184,10 @@ export async function createTransaction(
 
   const { data, error } = await supabase
     .from('transactions')
-    .insert({ ...input, user_id: user.id })
+    .insert({
+      ...(parsed.data satisfies ValidTransactionInput),
+      user_id: user.id,
+    })
     .select('*, categories(*)')
     .single();
 
@@ -134,10 +200,22 @@ export async function updateTransaction(
   input: UpdateTransactionInput
 ): Promise<{ data: Transaction | null; error: string | null }> {
   const supabase = createClient();
+  const parsed = transactionUpdateSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: parsed.error.issues[0]?.message ?? '입력값이 올바르지 않습니다.',
+    };
+  }
+
+  const userId = await getCurrentUserId();
+  if (!userId) return { data: null, error: '로그인이 필요합니다.' };
+
   const { data, error } = await supabase
     .from('transactions')
-    .update(input)
+    .update(parsed.data satisfies ValidTransactionUpdate)
     .eq('id', id)
+    .eq('user_id', userId)
     .select('*, categories(*)')
     .single();
 
@@ -149,7 +227,14 @@ export async function deleteTransaction(
   id: number
 ): Promise<{ error: string | null }> {
   const supabase = createClient();
-  const { error } = await supabase.from('transactions').delete().eq('id', id);
+  const userId = await getCurrentUserId();
+  if (!userId) return { error: '로그인이 필요합니다.' };
+
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
   if (error) return { error: error.message };
   return { error: null };
 }
@@ -158,9 +243,13 @@ export async function fetchRecentTransactions(
   limit = 5
 ): Promise<Transaction[]> {
   const supabase = createClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error('로그인이 필요합니다.');
+
   const { data, error } = await supabase
     .from('transactions')
     .select('*, categories(*)')
+    .eq('user_id', userId)
     .order('date', { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
@@ -172,6 +261,9 @@ export async function fetchCategorySpending(
   endDate?: string
 ): Promise<CategorySpending[]> {
   const supabase = createClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error('로그인이 필요합니다.');
+
   const now = new Date();
   const from =
     startDate ?? new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -189,6 +281,7 @@ export async function fetchCategorySpending(
   const { data, error } = await supabase
     .from('transactions')
     .select('amount, categories(id, name, color, icon, type)')
+    .eq('user_id', userId)
     .gte('date', from)
     .lte('date', to);
 
@@ -243,11 +336,15 @@ export async function fetchTransactionsByRange(
   endDate: string
 ): Promise<RawTransaction[]> {
   const supabase = createClient();
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error('로그인이 필요합니다.');
+
   const { data, error } = await supabase
     .from('transactions')
     .select(
       'id, amount, date, description, categories(id, name, type, color, icon)'
     )
+    .eq('user_id', userId)
     .gte('date', startDate)
     .lte('date', endDate)
     .order('date', { ascending: true });
@@ -297,6 +394,16 @@ export async function fetchMonthlyTrend(months = 12): Promise<MonthlyTrend[]> {
 
 export async function fetchMonthlyTransactionSummary(): Promise<MonthlyTransactionSummary> {
   const supabase = createClient();
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return {
+      totalIncome: 0,
+      totalExpense: 0,
+      netBalance: 0,
+      error: '로그인이 필요합니다.',
+    };
+  }
 
   const now = new Date();
   const startOfMonth = new Date(
@@ -317,6 +424,7 @@ export async function fetchMonthlyTransactionSummary(): Promise<MonthlyTransacti
   const { data, error } = await supabase
     .from('transactions')
     .select('amount, categories(type)')
+    .eq('user_id', userId)
     .gte('date', startOfMonth)
     .lte('date', endOfMonth);
 

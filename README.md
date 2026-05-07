@@ -1,41 +1,112 @@
-# 💰 VibeLedger (바이브레저)
-> **AI 기반의 지능형 가계부 및 자산 관리 솔루션**
-> 
-> 단순한 지출 기록을 넘어, AI 에이전트를 이용한 데이터 중심의 개인 재무 관리 도구입니다. 
+# VibeLedger
 
----
+AI 기반 가계부 및 개인 재무 관리 앱입니다. 거래 기록, 예산 관리, 대시보드, 분석 리포트, Gemini 기반 자연어 거래 입력과 재정 인사이트를 제공합니다.
 
-## 1. 프로젝트 개요
+## 주요 기능
 
-### 1.1. 기술 스택 요약
+- Supabase Auth 기반 로그인, 회원가입, 이메일 인증, 비밀번호 재설정
+- 거래 CRUD, 검색, 필터, 낙관적 업데이트
+- CSV 거래 내보내기/가져오기
+- 카테고리별 월 예산, 예산 초과/임박 알림
+- 대시보드와 분석 리포트
+- Gemini 기반 자연어 거래 파싱과 AI 인사이트
+- Supabase RLS, RPC, seed를 포함한 재현 가능한 DB 마이그레이션
 
-| 분류 | 기술 스택 | 선택 이유 |
-| :--- | :--- | :--- |
-| **Framework** | **Next.js 16 (App Router)** | SEO 최적화 및 서버 컴포넌트 기반의 성능 극대화 |
-| **Language** | **TypeScript** | 정적 타입을 통한 런타임 에러 최소화 및 개발자 경험(DX) 향상 |
-| **State Management** | **Zustand & TanStack Query v6** | 클라이언트 상태의 경량화 및 서버 데이터 동기화 최적화 |
-| **Database / ORM** | **Supabase / Drizzle ORM** | PostgreSQL 기반의 강력한 백엔드와 타입 안전한 SQL 쿼리 작성 |
-| **Styling** | **Tailwind CSS v4** | 유틸리티 퍼스트 방식을 통한 일관되고 빠른 UI 시스템 구축 |
-| **Form / Validation** | **React Hook Form / Zod** | 선언적 폼 관리 및 런타임/빌드타임 통합 유효성 검사 |
-| **Git Hooks** | **Husky & lint-staged** | 커밋 전 린트 및 타입 체크를 통한 코드 품질 강제 자동화 |
-| **Code Quality** | **ESLint / Prettier** | 일관된 코딩 컨벤션 및 코드 스타일 유지 |
+## 기술 스택
 
-### 1.2. 프로젝트 구조 및 주요 특징
+- Next.js 16 App Router, React 19, TypeScript
+- Supabase Auth/Postgres, Drizzle schema/migration workflow
+- TanStack Query v5
+- Tailwind CSS v4, shadcn-style UI components
+- Zod validation
+- Vitest, ESLint, Prettier, Husky, lint-staged
 
-#### **[Key Features]**
-* **Own Backend Architecture**: MSW 등의 모킹 라이브러리를 사용하지 않고, Supabase와 Next.js Server Actions를 직접 연동하여 **실제 동작하는 Full-stack 서비스**를 구현했습니다.
-* **AI-Powered Input**: 사용자의 비정형 자연어 입력을 LLM API가 분석하여 거래 내역으로 자동 전환하는 지능형 입력 시스템을 제공합니다.
-* **Strict Quality Control**: Husky를 활용한 `pre-commit` 훅을 통해 `lint`, `type-check`를 통과하지 못한 코드가 저장소에 병합되는 것을 원천 차단했습니다.
-* **Optimistic UI Update**: 지출 내역 추가/삭제 시 사용자에게 즉각적인 피드백을 주기 위해 TanStack Query의 낙관적 업데이트 기법을 적용했습니다.
+## 프로젝트 구조
 
-#### **[Directory Structure]**
 ```text
 src/
-├── app/                  # Next.js App Router (페이지 구성 및 레이아웃)
-├── components/           # UI(shadcn) 및 기능별(Feature) 컴포넌트
-├── db/                   # Drizzle ORM 스키마 정의 및 DB 커넥션 설정
-├── hooks/                # Server State 관리 및 커스텀 훅
-├── lib/                  # 외부 라이브러리(Supabase 등) 인스턴스 설정
-├── services/             # 비즈니스 로직 및 Server Actions (백엔드 로직)
-├── store/                # Zustand를 이용한 클라이언트 전역 상태 관리
-└── types/                # TypeScript 공통 인터페이스 및 타입 정의
+├── app/                 # App Router pages, layouts, route handlers
+├── actions/             # Server Actions for auth and LLM features
+├── components/          # Common and UI components
+├── db/                  # Drizzle schema and DB bootstrap
+├── lib/                 # API clients, validation, CSV, security utilities
+├── providers/           # App-level providers
+├── stores/              # Zustand stores
+└── types/               # Environment and shared type declarations
+
+supabase/
+└── migrations/          # Tables, RLS policies, seed data, RPC functions
+```
+
+## 로컬 실행
+
+1. 의존성을 설치합니다.
+
+```bash
+npm install
+```
+
+2. 환경변수를 준비합니다.
+
+```bash
+cp .env.example .env
+```
+
+필수 값:
+
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anon key
+- `DATABASE_URL`: Supabase Postgres connection string
+- `NEXT_PUBLIC_APP_URL`: 로컬은 보통 `http://localhost:3000`
+- `GEMINI_API_KEY`: AI 입력/인사이트를 사용할 때 필요
+
+3. Supabase SQL 마이그레이션을 적용합니다.
+
+`supabase/migrations/0001_initial_schema_rls_rpc.sql`을 Supabase SQL Editor에서 실행하거나, Supabase CLI를 사용하는 경우 프로젝트에 맞게 연결한 뒤 마이그레이션을 적용합니다.
+
+마이그레이션에는 다음이 포함됩니다.
+
+- `profiles`, `categories`, `transactions`, `budgets` 테이블
+- 기본 카테고리 seed
+- 회원가입 시 `profiles`를 생성하는 trigger
+- 사용자별 Row Level Security policies
+- `get_budget_with_spending`, `get_monthly_income_expense_trend` RPC
+
+4. 개발 서버를 실행합니다.
+
+```bash
+npm run dev
+```
+
+## 품질 검증
+
+```bash
+npm run lint
+npm run type-check
+npm run test
+npm run build
+```
+
+한 번에 실행하려면:
+
+```bash
+npm run ci
+```
+
+GitHub Actions도 동일한 검증을 PR과 main/master push에서 실행합니다.
+
+## Docker 실행
+
+```bash
+docker compose up --build
+```
+
+Docker 빌드 시 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 build arg로 필요하며, 런타임 값은 `.env`에서 로드됩니다.
+
+## 운영 체크리스트
+
+- Supabase Auth URL 설정에 `${NEXT_PUBLIC_APP_URL}/auth/callback`을 등록합니다.
+- 배포 전에 `supabase/migrations` SQL이 운영 DB에 적용되었는지 확인합니다.
+- Gemini 기능은 서버 액션에서 세션을 확인하고 간단한 사용자별 rate limit을 적용합니다.
+- LLM 원문/파싱 결과는 운영 로그에 남기지 않습니다.
+- 민감한 서버 전용 키는 `NEXT_PUBLIC_` 접두사를 붙이지 않습니다.

@@ -44,9 +44,11 @@ export const transactions = pgTable('transactions', {
   categoryId: integer('category_id').references(() => categories.id, {
     onDelete: 'set null',
   }),
-  userId: uuid('user_id').references(() => profiles.id, {
-    onDelete: 'cascade',
-  }),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => profiles.id, {
+      onDelete: 'cascade',
+    }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

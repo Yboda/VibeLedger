@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { LoginFormData } from '@/lib/validations/auth';
-import { SignupFormData } from '@/lib/validations/signup';
+import { passwordSchema, SignupFormData } from '@/lib/validations/signup';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -36,7 +36,7 @@ export async function login(data: LoginFormData) {
             '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.';
           break;
         case 'user_not_found':
-          errorMessage = '존재하지 않는 계정입니다.';
+          errorMessage = '이메일 또는 비밀번호가 일치하지 않습니다.';
           break;
         case 'user_banned':
           errorMessage = '관리자에 의해 정지된 계정입니다.';
@@ -180,14 +180,27 @@ export async function resetPassword(email: string) {
 
 // 비밀번호 재설정
 export async function updatePassword(newPassword: string) {
+  const parsed = passwordSchema.safeParse(newPassword);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message:
+        parsed.error.issues[0]?.message ?? '비밀번호 형식이 올바르지 않습니다.',
+    };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.updateUser({
-    password: newPassword,
+    password: parsed.data,
   });
 
   if (error) {
-    return { success: false, message: error.message };
+    console.error('Password update error:', error);
+    return {
+      success: false,
+      message: '비밀번호 변경에 실패했습니다. 다시 시도해주세요.',
+    };
   }
 
   return { success: true };
