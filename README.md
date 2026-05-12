@@ -106,6 +106,7 @@ Docker 빌드 시 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가
 ## 운영 체크리스트
 
 - Supabase Auth URL 설정에 `${NEXT_PUBLIC_APP_URL}/auth/callback`을 등록합니다.
+- Google 소셜 로그인을 사용하려면 Supabase `Authentication > Providers > Google`에서 Google OAuth Client ID/Secret을 등록하고, Google Cloud Console의 승인된 리디렉션 URI에 Supabase가 안내하는 callback URL을 추가합니다.
 - 배포 전에 `supabase/migrations` SQL이 운영 DB에 적용되었는지 확인합니다.
 - Gemini 기능은 서버 액션에서 세션을 확인하고 간단한 사용자별 rate limit을 적용합니다.
 - LLM 원문/파싱 결과는 운영 로그에 남기지 않습니다.

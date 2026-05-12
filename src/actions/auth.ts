@@ -7,6 +7,51 @@ import { passwordSchema, SignupFormData } from '@/lib/validations/signup';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
+type GoogleSignInResult =
+  | { success: true; url: string }
+  | { success: false; message: string };
+
+// Google 소셜 로그인
+export async function signInWithGoogle(): Promise<GoogleSignInResult> {
+  const supabase = await createClient();
+
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${baseUrl}/auth/callback?next=/dashboard`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (error) {
+      console.error('Google OAuth error:', error);
+      return {
+        success: false,
+        message: 'Google 로그인에 실패했습니다. 다시 시도해주세요.',
+      };
+    }
+
+    if (!data.url) {
+      return {
+        success: false,
+        message: 'Google 로그인 URL을 생성하지 못했습니다.',
+      };
+    }
+
+    return { success: true, url: data.url };
+  } catch (error) {
+    console.error('Unexpected Google OAuth error:', error);
+    return {
+      success: false,
+      message: '서버 오류가 발생했습니다. 다시 시도해주세요.',
+    };
+  }
+}
+
 // 로그인
 export async function login(data: LoginFormData) {
   const supabase = await createClient();
