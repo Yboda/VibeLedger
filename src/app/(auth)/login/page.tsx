@@ -7,17 +7,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { login, signInWithGoogle } from '@/actions/auth';
+import { login, signInWithSocialProvider } from '@/actions/auth';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import Spinner from '@/components/common/Spinner';
 
+type SocialProvider = 'google' | 'kakao';
+
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(
+    null
+  );
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -58,18 +62,18 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true);
+  const handleSocialLogin = async (provider: SocialProvider) => {
+    setLoadingProvider(provider);
     setServerError(null);
 
-    const result = await signInWithGoogle();
+    const result = await signInWithSocialProvider(provider);
     if (result.success) {
       window.location.href = result.url;
       return;
     }
 
     setServerError(result.message);
-    setIsGoogleLoading(false);
+    setLoadingProvider(null);
   };
 
   return (
@@ -184,15 +188,15 @@ export default function LoginPage() {
       </div>
 
       {/* Social Login */}
-      <div className="flex justify-center">
+      <div className="grid grid-cols-1 gap-3">
         <Button
           type="button"
           variant="outline"
-          onClick={() => void handleGoogleLogin()}
-          disabled={isLoading || isGoogleLoading}
+          onClick={() => void handleSocialLogin('google')}
+          disabled={isLoading || loadingProvider !== null}
           className="flex h-12 w-full items-center gap-2 bg-white text-slate-800 hover:bg-gray-50 border-gray-300"
         >
-          {isGoogleLoading ? (
+          {loadingProvider === 'google' ? (
             <span className="flex items-center gap-2">
               <Spinner size="sm" />
               Google로 이동 중...
@@ -218,6 +222,27 @@ export default function LoginPage() {
                 />
               </svg>
               <span className="font-medium">Google로 로그인</span>
+            </>
+          )}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void handleSocialLogin('kakao')}
+          disabled={isLoading || loadingProvider !== null}
+          className="flex h-12 w-full items-center gap-2 bg-[#FEE500] text-[#391B1B] hover:bg-[#f5dc00] border-[#FEE500]"
+        >
+          {loadingProvider === 'kakao' ? (
+            <span className="flex items-center gap-2">
+              <Spinner size="sm" />
+              Kakao로 이동 중...
+            </span>
+          ) : (
+            <>
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.726 1.8 5.117 4.5 6.473-.2.742-.724 2.684-.83 3.104-.13.524.192.516.404.376.166-.11 2.644-1.792 3.717-2.522.71.1 1.448.151 2.209.151 5.523 0 10-3.463 10-7.691C22 6.463 17.523 3 12 3z" />
+              </svg>
+              <span className="font-medium">Kakao로 로그인</span>
             </>
           )}
         </Button>
