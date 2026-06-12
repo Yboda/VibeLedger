@@ -7,64 +7,6 @@ import { passwordSchema, SignupFormData } from '@/lib/validations/signup';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-type SocialProvider = 'google' | 'kakao';
-
-type SocialSignInResult =
-  | { success: true; url: string }
-  | { success: false; message: string };
-
-const SOCIAL_PROVIDER_LABEL: Record<SocialProvider, string> = {
-  google: 'Google',
-  kakao: 'Kakao',
-};
-
-// 소셜 로그인
-export async function signInWithSocialProvider(
-  provider: SocialProvider
-): Promise<SocialSignInResult> {
-  const supabase = await createClient();
-  const providerLabel = SOCIAL_PROVIDER_LABEL[provider];
-
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${baseUrl}/auth/callback?next=/dashboard`,
-        queryParams:
-          provider === 'google'
-            ? {
-                access_type: 'offline',
-                prompt: 'consent',
-              }
-            : undefined,
-      },
-    });
-
-    if (error) {
-      console.error(`${providerLabel} OAuth error:`, error);
-      return {
-        success: false,
-        message: `${providerLabel} 로그인에 실패했습니다. 다시 시도해주세요.`,
-      };
-    }
-
-    if (!data.url) {
-      return {
-        success: false,
-        message: `${providerLabel} 로그인 URL을 생성하지 못했습니다.`,
-      };
-    }
-
-    return { success: true, url: data.url };
-  } catch (error) {
-    console.error(`Unexpected ${providerLabel} OAuth error:`, error);
-    return {
-      success: false,
-      message: '서버 오류가 발생했습니다. 다시 시도해주세요.',
-    };
-  }
-}
-
 // 로그인
 export async function login(data: LoginFormData) {
   const supabase = await createClient();

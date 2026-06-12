@@ -1,19 +1,44 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { login, signInWithSocialProvider } from '@/actions/auth';
+import { login } from '@/actions/auth';
+import {
+  signInWithSocialProvider,
+  type SocialProvider,
+} from '@/lib/auth/social-oauth';
+import { createClient } from '@/lib/supabase/client';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import Spinner from '@/components/common/Spinner';
 
-type SocialProvider = 'google' | 'kakao';
+function LoginCallbackError() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (searchParams.get('error') !== 'auth_callback_failed') return;
+
+    const supabase = createClient();
+
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace('/dashboard');
+        return;
+      }
+
+      toast.error('소셜 로그인에 실패했습니다. 다시 시도해주세요.');
+    });
+  }, [router, searchParams]);
+
+  return null;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -67,17 +92,17 @@ export default function LoginPage() {
     setServerError(null);
 
     const result = await signInWithSocialProvider(provider);
-    if (result.success) {
-      window.location.href = result.url;
-      return;
+    if (!result.success) {
+      setServerError(result.message);
+      setLoadingProvider(null);
     }
-
-    setServerError(result.message);
-    setLoadingProvider(null);
   };
 
   return (
     <>
+      <Suspense fallback={null}>
+        <LoginCallbackError />
+      </Suspense>
       {/* Server Error */}
       {serverError && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">

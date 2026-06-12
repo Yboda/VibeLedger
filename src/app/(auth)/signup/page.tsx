@@ -7,11 +7,13 @@ import { Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { signInWithSocialProvider, signup } from '@/actions/auth';
+import { signup } from '@/actions/auth';
+import {
+  signInWithSocialProvider,
+  type SocialProvider,
+} from '@/lib/auth/social-oauth';
 import Spinner from '@/components/common/Spinner';
 import { signupSchema, type SignupFormData } from '@/lib/validations/signup';
-
-type SocialProvider = 'google' | 'kakao';
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -48,13 +50,10 @@ export default function SignupPage() {
     setServerError(null);
 
     const result = await signInWithSocialProvider(provider);
-    if (result.success) {
-      window.location.href = result.url;
-      return;
+    if (!result.success) {
+      setServerError(result.message);
+      setLoadingProvider(null);
     }
-
-    setServerError(result.message);
-    setLoadingProvider(null);
   };
 
   return (

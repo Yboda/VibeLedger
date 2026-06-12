@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getUserDisplayName } from '@/lib/auth/display-name';
 import { useSetHeader } from '../_providers/header-context';
 import { TotalBalanceCard } from './_components/TotalBalanceCard';
 import { StatCard } from './_components/StatCard';
@@ -27,8 +28,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      const name = user?.user_metadata?.display_name ?? user?.email ?? '';
-      setUserName(name);
+      setUserName(getUserDisplayName(user));
     });
   }, []);
 
