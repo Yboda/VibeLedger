@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  deleteTransaction,
+  deleteTransactions,
   type Transaction,
   type TransactionListResult,
 } from '@/lib/api/transactions';
@@ -18,31 +18,34 @@ function isRecentQuery(queryKey: readonly unknown[]): boolean {
   return queryKey[0] === 'transactions' && queryKey[1] === 'recent';
 }
 
-export function useDeleteTransactionMutation() {
+export function useDeleteTransactionsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => deleteTransaction(id),
+    mutationFn: async (ids: number[]) => {
+      const result = await deleteTransactions(ids);
+      if (result.error) throw new Error(result.error);
+    },
 
-    onMutate: async id => {
-      // 진행 중인 refetch가 낙관적 업데이트를 덮어쓰지 않도록 취소
+    onMutate: async ids => {
+      const idSet = new Set(ids);
+
       await queryClient.cancelQueries({ queryKey: ['transactions'] });
 
-      // 목록 쿼리 스냅샷 저장 + 낙관적 제거
       const listSnapshots = queryClient.getQueriesData<TransactionListResult>({
         predicate: q => isListQuery(q.queryKey),
       });
       for (const [key, data] of listSnapshots) {
         if (data) {
+          const removedCount = data.data.filter(tx => idSet.has(tx.id)).length;
           queryClient.setQueryData<TransactionListResult>(key, {
             ...data,
-            data: data.data.filter(tx => tx.id !== id),
-            total: Math.max(0, data.total - 1),
+            data: data.data.filter(tx => !idSet.has(tx.id)),
+            total: Math.max(0, data.total - removedCount),
           });
         }
       }
 
-      // 최근 거래 쿼리 스냅샷 저장 + 낙관적 제거
       const recentSnapshots = queryClient.getQueriesData<Transaction[]>({
         predicate: q => isRecentQuery(q.queryKey),
       });
@@ -50,7 +53,7 @@ export function useDeleteTransactionMutation() {
         if (data) {
           queryClient.setQueryData<Transaction[]>(
             key,
-            data.filter(tx => tx.id !== id)
+            data.filter(tx => !idSet.has(tx.id))
           );
         }
       }
@@ -58,8 +61,7 @@ export function useDeleteTransactionMutation() {
       return { listSnapshots, recentSnapshots };
     },
 
-    onError: (_err, _id, context) => {
-      // 에러 시 스냅샷으로 롤백
+    onError: (_err, _ids, context) => {
       for (const [key, data] of context?.listSnapshots ?? []) {
         queryClient.setQueryData(key, data);
       }
@@ -74,3 +76,6 @@ export function useDeleteTransactionMutation() {
     },
   });
 }
+
+/** @deprecated use useDeleteTransactionsMutation */
+export const useDeleteTransactionMutation = useDeleteTransactionsMutation;

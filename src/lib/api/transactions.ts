@@ -16,6 +16,28 @@ export interface Category {
   color: string | null;
 }
 
+/** CSV/Excel에서 넘어온 카테고리명을 DB 이름과 비교하기 위해 정규화 */
+export function normalizeCategoryName(name: string): string {
+  return name
+    .trim()
+    .normalize('NFKC')
+    .replace(/\uFF0F/g, '/')
+    .replace(/\s+/g, '');
+}
+
+export function findCategoryForImport(
+  categories: Category[],
+  categoryName: string,
+  type: TransactionType
+): Category | undefined {
+  const normalized = normalizeCategoryName(categoryName);
+  return categories.find(
+    category =>
+      category.type === type &&
+      normalizeCategoryName(category.name) === normalized
+  );
+}
+
 export interface Transaction {
   id: number;
   amount: number;
@@ -226,6 +248,14 @@ export async function updateTransaction(
 export async function deleteTransaction(
   id: number
 ): Promise<{ error: string | null }> {
+  return deleteTransactions([id]);
+}
+
+export async function deleteTransactions(
+  ids: number[]
+): Promise<{ error: string | null }> {
+  if (ids.length === 0) return { error: null };
+
   const supabase = createClient();
   const userId = await getCurrentUserId();
   if (!userId) return { error: '로그인이 필요합니다.' };
@@ -233,7 +263,7 @@ export async function deleteTransaction(
   const { error } = await supabase
     .from('transactions')
     .delete()
-    .eq('id', id)
+    .in('id', ids)
     .eq('user_id', userId);
   if (error) return { error: error.message };
   return { error: null };
@@ -258,7 +288,8 @@ export async function fetchRecentTransactions(
 
 export async function fetchCategorySpending(
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  options?: { limit?: number }
 ): Promise<CategorySpending[]> {
   const supabase = createClient();
   const userId = await getCurrentUserId();
@@ -311,9 +342,9 @@ export async function fetchCategorySpending(
     }
   }
 
-  return Array.from(map.values())
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 5);
+  const sorted = Array.from(map.values()).sort((a, b) => b.total - a.total);
+  const { limit } = options ?? {};
+  return limit != null ? sorted.slice(0, limit) : sorted;
 }
 
 // 특정 날짜 범위 내 거래 전체 조회 (Analytics 집계용)

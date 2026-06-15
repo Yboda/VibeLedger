@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -25,6 +26,15 @@ type AllocationRow = {
   categoryId: number;
   amount: string;
 };
+
+function parseAmountInput(value: string): string {
+  return value.replace(/[^0-9]/g, '');
+}
+
+function formatAmountInput(value: string): string {
+  if (!value) return '';
+  return Number(value).toLocaleString('ko-KR');
+}
 
 interface BudgetModalProps {
   open: boolean;
@@ -95,7 +105,7 @@ export function BudgetModal({
 
   const updateAmount = (idx: number, val: string) =>
     setAllocations(p =>
-      p.map((r, i) => (i === idx ? { ...r, amount: val } : r))
+      p.map((r, i) => (i === idx ? { ...r, amount: parseAmountInput(val) } : r))
     );
 
   const handleSave = () => {
@@ -118,24 +128,30 @@ export function BudgetModal({
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        onInteractOutside={event => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             {year}년 {month}월 예산 설정
           </DialogTitle>
+          <DialogDescription>카테고리별 예산을 설정해주세요.</DialogDescription>
         </DialogHeader>
 
         {/* 총 예산 (참고용) */}
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-slate-700">
-            총 예산 <span className="text-slate-400 font-normal">(참고용)</span>
+            총 예산{' '}
+            <span className="text-slate-400 font-normal">(배분 참고용)</span>
           </label>
           <div className="relative">
             <Input
-              type="number"
-              placeholder="예: 2000000"
-              value={totalBudget}
-              onChange={e => setTotalBudget(e.target.value)}
+              type="text"
+              inputMode="numeric"
+              placeholder="예: 2,000,000"
+              value={formatAmountInput(totalBudget)}
+              onChange={e => setTotalBudget(parseAmountInput(e.target.value))}
               className="pr-7"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
@@ -194,9 +210,10 @@ export function BudgetModal({
 
                 <div className="relative w-36">
                   <Input
-                    type="number"
-                    placeholder="금액"
-                    value={row.amount}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="예: 300,000"
+                    value={formatAmountInput(row.amount)}
                     onChange={e => updateAmount(idx, e.target.value)}
                     className="pr-6"
                   />

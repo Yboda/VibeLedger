@@ -1,40 +1,11 @@
 'use client';
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import {
-  BookOpen,
-  Banknote,
-  Car,
-  Gift,
-  Heart,
-  Home,
-  MoreHorizontal,
-  Music,
-  ShoppingBag,
-  Smartphone,
-  TrendingUp,
-  Utensils,
-  type LucideProps,
-} from 'lucide-react';
-import { type ElementType } from 'react';
 import { CrossfadeContent } from '@/components/common/CrossfadeContent';
 import { DonutChartSkeleton } from '@/components/common/skeletons';
+import { CategoryIconGlyph } from '@/lib/category-icons';
 import { useCategorySpendingByRangeQuery } from '../_api/useAnalyticsQuery';
 import { useAnalyticsPeriod } from '../_providers/analytics-period-context';
-
-const ICON_MAP: Record<string, ElementType<LucideProps>> = {
-  utensils: Utensils,
-  car: Car,
-  home: Home,
-  smartphone: Smartphone,
-  'shopping-bag': ShoppingBag,
-  heart: Heart,
-  'book-open': BookOpen,
-  music: Music,
-  briefcase: Banknote,
-  gift: Gift,
-  'trending-up': TrendingUp,
-};
 
 const DONUT_COLORS = [
   '#F97354',
@@ -46,6 +17,9 @@ const DONUT_COLORS = [
   '#06B6D4',
   '#84CC16',
 ];
+
+const CHART_TOP_N = 5;
+const OTHER_COLOR = '#94A3B8';
 
 function formatAmount(amount: number): string {
   if (amount >= 100_000_000) return `${(amount / 100_000_000).toFixed(1)}억`;
@@ -88,11 +62,25 @@ export function CategoryBreakdown() {
   );
 
   const total = categories.reduce((sum, c) => sum + c.total, 0);
+  const topCategories = categories.slice(0, CHART_TOP_N);
+  const otherTotal = categories
+    .slice(CHART_TOP_N)
+    .reduce((sum, c) => sum + c.total, 0);
 
-  const chartData: ChartItem[] = categories.map((cat, i) => ({
-    name: cat.name,
-    value: cat.total,
-    color: cat.color ?? DONUT_COLORS[i % DONUT_COLORS.length] ?? '#6B7280',
+  const displayItems = [
+    ...topCategories.map((cat, i) => ({
+      name: cat.name,
+      value: cat.total,
+      color: cat.color ?? DONUT_COLORS[i % DONUT_COLORS.length] ?? '#6B7280',
+      icon: cat.icon,
+    })),
+    ...(otherTotal > 0
+      ? [{ name: '기타', value: otherTotal, color: OTHER_COLOR, icon: null }]
+      : []),
+  ];
+
+  const chartData: ChartItem[] = displayItems.map(item => ({
+    ...item,
     totalForPct: total,
   }));
 
@@ -127,7 +115,7 @@ export function CategoryBreakdown() {
                     outerRadius="70%"
                     dataKey="value"
                     nameKey="name"
-                    paddingAngle={categories.length > 1 ? 2 : 0}
+                    paddingAngle={chartData.length > 1 ? 2 : 0}
                     startAngle={90}
                     endAngle={-270}
                   >
@@ -153,30 +141,27 @@ export function CategoryBreakdown() {
 
             {/* 카테고리 목록 */}
             <div className="flex-1 min-h-0 space-y-2.5 overflow-y-auto pr-1 mt-4">
-              {categories.map((cat, i) => {
-                const color =
-                  cat.color ??
-                  DONUT_COLORS[i % DONUT_COLORS.length] ??
-                  '#6B7280';
-                const percentage = total > 0 ? (cat.total / total) * 100 : 0;
-                const Icon =
-                  (cat.icon ? ICON_MAP[cat.icon] : null) ?? MoreHorizontal;
+              {displayItems.map(item => {
+                const percentage = total > 0 ? (item.value / total) * 100 : 0;
 
                 return (
-                  <div key={i} className="flex items-center gap-3">
+                  <div key={item.name} className="flex items-center gap-3">
                     <div
                       className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: color }}
+                      style={{ backgroundColor: item.color }}
                     >
-                      <Icon className="w-3.5 h-3.5 text-white" />
+                      <CategoryIconGlyph
+                        icon={item.icon}
+                        className="w-3.5 h-3.5 text-white"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-sm font-medium text-slate-700 truncate">
-                          {cat.name}
+                          {item.name}
                         </span>
                         <span className="text-sm font-semibold text-slate-800 ml-2 shrink-0">
-                          ₩{cat.total.toLocaleString('ko-KR')}
+                          ₩{item.value.toLocaleString('ko-KR')}
                         </span>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -184,7 +169,7 @@ export function CategoryBreakdown() {
                           className="h-full rounded-full transition-all duration-500"
                           style={{
                             width: `${percentage}%`,
-                            backgroundColor: color,
+                            backgroundColor: item.color,
                           }}
                         />
                       </div>

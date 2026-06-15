@@ -1,36 +1,6 @@
-import {
-  BookOpen,
-  Banknote,
-  Car,
-  Gift,
-  Heart,
-  Home,
-  MoreHorizontal,
-  Music,
-  Pencil,
-  ShoppingBag,
-  Smartphone,
-  TrendingUp,
-  Trash2,
-  Utensils,
-  type LucideProps,
-} from 'lucide-react';
-import { type ElementType } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
+import { CategoryIconGlyph } from '@/lib/category-icons';
 import { BudgetWithSpending } from '@/lib/api/budgets';
-
-const ICON_MAP: Record<string, ElementType<LucideProps>> = {
-  utensils: Utensils,
-  car: Car,
-  home: Home,
-  smartphone: Smartphone,
-  'shopping-bag': ShoppingBag,
-  heart: Heart,
-  'book-open': BookOpen,
-  music: Music,
-  briefcase: Banknote,
-  gift: Gift,
-  'trending-up': TrendingUp,
-};
 
 export function BudgetCard({
   budget,
@@ -60,13 +30,10 @@ export function BudgetCard({
             className="w-12 h-12 rounded-xl flex items-center justify-center"
             style={{ backgroundColor: color }}
           >
-            {(() => {
-              const Icon =
-                (budget.category_icon
-                  ? ICON_MAP[budget.category_icon]
-                  : null) ?? MoreHorizontal;
-              return <Icon className="w-6 h-6 text-white" />;
-            })()}
+            <CategoryIconGlyph
+              icon={budget.category_icon}
+              className="w-6 h-6 text-white"
+            />
           </div>
           <div>
             <h3 className="font-semibold text-slate-800">
