@@ -12,8 +12,9 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { fetchMonthlyBudgetTotals } from '@/lib/api/budgets';
+import { CrossfadeContent } from '@/components/common/CrossfadeContent';
+import { PairedBarChartSkeleton } from '@/components/common/skeletons';
 import { useMonthlyTrendQuery } from '../../dashboard/_api/useMonthlyTrendQuery';
-import Spinner from '@/components/common/Spinner';
 
 function formatYAxis(value: number) {
   if (value >= 10000) return `${Math.floor(value / 10000)}만`;
@@ -45,11 +46,11 @@ export function MonthlyComparison() {
       <h3 className="text-lg font-semibold text-slate-800 mb-4">
         월별 예산 vs 지출 추이
       </h3>
-      {isLoading ? (
-        <div className="flex items-center justify-center h-48">
-          <Spinner size="sm" />
-        </div>
-      ) : (
+      <CrossfadeContent
+        isLoading={isLoading}
+        skeleton={<PairedBarChartSkeleton bars={6} height={192} />}
+        className="h-48"
+      >
         <ResponsiveContainer width="100%" height={192}>
           <BarChart
             data={chartData}
@@ -102,7 +103,7 @@ export function MonthlyComparison() {
             />
           </BarChart>
         </ResponsiveContainer>
-      )}
+      </CrossfadeContent>
     </div>
   );
 }

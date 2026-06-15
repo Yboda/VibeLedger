@@ -13,6 +13,7 @@ import { BudgetStatus } from './_components/BudgetStatus';
 import { RecentTransactions } from './_components/RecentTransactions';
 import { TopSpendingCategories } from './_components/TopSpendingCategories';
 import { useMonthlySummaryQuery } from '../transactions/_api/useMonthlySummaryQuery';
+import { DASHBOARD_LAYOUT } from './_components/dashboard-skeletons';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -22,7 +23,7 @@ function getGreeting() {
 }
 
 export default function DashboardPage() {
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState<string | null>(null);
   const { data: summary, isLoading: summaryLoading } = useMonthlySummaryQuery();
 
   useEffect(() => {
@@ -34,8 +35,9 @@ export default function DashboardPage() {
 
   useSetHeader({
     subtitle: getGreeting(),
-    titleHighlight: userName,
-    titleSuffix: '님, 반갑습니다!',
+    ...(userName !== null
+      ? { titleHighlight: userName, titleSuffix: '님, 반갑습니다!' }
+      : { titleLoading: true }),
     showDate: true,
   });
 
@@ -43,9 +45,12 @@ export default function DashboardPage() {
   const totalExpense = summary?.totalExpense ?? 0;
 
   return (
-    <>
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
       {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+      <div
+        className="grid shrink-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5"
+        style={{ height: DASHBOARD_LAYOUT.statsRow }}
+      >
         <TotalBalanceCard />
         <StatCard
           title="이번 달 수입"
@@ -63,16 +68,19 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
+      <div
+        className="grid shrink-0 grid-cols-1 gap-4 xl:grid-cols-4"
+        style={{ height: DASHBOARD_LAYOUT.chartsRow }}
+      >
         <MonthlySpendingTrend />
         <BudgetStatus />
       </div>
 
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      {/* Bottom Row — 남은 높이 전부 사용 */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-2">
         <RecentTransactions />
         <TopSpendingCategories />
       </div>
-    </>
+    </div>
   );
 }

@@ -19,7 +19,27 @@ type NavigationContextValue = {
 const NavigationContext = createContext<NavigationContextValue | null>(null);
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
-  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const pathname = usePathname();
+  const [pendingTarget, setPendingTarget] = useState<string | null>(null);
+  const [pendingOrigin, setPendingOrigin] = useState<string | null>(null);
+
+  const setPendingPath = (path: string | null) => {
+    if (path === null) {
+      setPendingTarget(null);
+      setPendingOrigin(null);
+      return;
+    }
+
+    setPendingTarget(path);
+    setPendingOrigin(pathname);
+  };
+
+  const pendingPath =
+    pendingTarget !== null &&
+    pendingOrigin === pathname &&
+    !isNavActive(pathname, pendingTarget)
+      ? pendingTarget
+      : null;
 
   return (
     <NavigationContext.Provider value={{ pendingPath, setPendingPath }}>

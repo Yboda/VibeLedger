@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import Spinner from '@/components/common/Spinner';
+import { CrossfadeContent } from '@/components/common/CrossfadeContent';
+import { HeatmapSkeleton } from '@/components/common/skeletons';
 import { useTransactionsByRangeQuery } from '../_api/useAnalyticsQuery';
 import { useAnalyticsPeriod } from '../_providers/analytics-period-context';
 
@@ -89,11 +90,11 @@ export function WeeklyHeatmap() {
         요일별 지출 패턴
       </h3>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center h-48">
-          <Spinner size="sm" />
-        </div>
-      ) : (
+      <CrossfadeContent
+        isLoading={isLoading}
+        skeleton={<HeatmapSkeleton weeks={5} days={7} />}
+        className="min-h-[192px]"
+      >
         <>
           <div className="flex gap-4">
             <div className="flex flex-col gap-2 pt-6">
@@ -158,7 +159,7 @@ export function WeeklyHeatmap() {
             <span className="text-xs text-slate-500">많음</span>
           </div>
         </>
-      )}
+      </CrossfadeContent>
     </div>
   );
 }

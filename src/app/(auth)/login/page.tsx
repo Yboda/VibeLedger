@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/client';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useNavigationStore } from '@/stores/navigationStore';
 import Spinner from '@/components/common/Spinner';
 
 function LoginCallbackError() {
@@ -42,6 +43,7 @@ function LoginCallbackError() {
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(
@@ -59,6 +61,12 @@ export default function LoginPage() {
     mode: 'onBlur',
   });
 
+  const isSubmitting = isLoading || isPending;
+
+  useEffect(() => {
+    router.prefetch('/dashboard');
+  }, [router]);
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setServerError(null);
@@ -68,16 +76,20 @@ export default function LoginPage() {
 
       if (result.success) {
         toast.success('로그인에 성공했습니다.');
-        router.push('/');
-      } else {
-        if ('redirectTo' in result && result.redirectTo) {
-          router.push(result.redirectTo as string);
-          return;
-        }
-        setServerError(result.message || '로그인에 실패했습니다.');
-        // 실패 시 비밀번호만 초기화
-        reset({ ...data, password: '' });
+        useNavigationStore.getState().setShowAppEntryOverlay(true);
+        startTransition(() => {
+          router.replace('/dashboard');
+        });
+        return;
       }
+
+      if ('redirectTo' in result && result.redirectTo) {
+        router.push(result.redirectTo as string);
+        return;
+      }
+      setServerError(result.message || '로그인에 실패했습니다.');
+      // 실패 시 비밀번호만 초기화
+      reset({ ...data, password: '' });
     } catch (error) {
       console.error('Login submission error:', error);
       setServerError('서버 오류가 발생했습니다. 다시 시도해주세요.');
@@ -139,7 +151,7 @@ export default function LoginPage() {
                     : ''
                 }`}
                 placeholder="이메일을 입력해주세요"
-                disabled={isLoading}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -165,13 +177,13 @@ export default function LoginPage() {
                     : ''
                 }`}
                 placeholder="비밀번호를 입력해주세요"
-                disabled={isLoading}
+                disabled={isSubmitting}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -192,9 +204,14 @@ export default function LoginPage() {
         <Button
           type="submit"
           className="w-full h-12 bg-brand-coral text-white font-medium rounded-lg hover:bg-brand-coral/90"
-          disabled={isLoading}
+          disabled={isSubmitting}
         >
-          {isLoading ? (
+          {isPending ? (
+            <span className="flex items-center gap-2">
+              <Spinner size="sm" />
+              대시보드로 이동 중...
+            </span>
+          ) : isLoading ? (
             <span className="flex items-center gap-2">
               <Spinner size="sm" />
               로그인 중...
@@ -218,7 +235,7 @@ export default function LoginPage() {
           type="button"
           variant="outline"
           onClick={() => void handleSocialLogin('google')}
-          disabled={isLoading || loadingProvider !== null}
+          disabled={isSubmitting || loadingProvider !== null}
           className="flex h-12 w-full items-center gap-2 bg-white text-slate-800 hover:bg-gray-50 border-gray-300"
         >
           {loadingProvider === 'google' ? (
@@ -254,7 +271,7 @@ export default function LoginPage() {
           type="button"
           variant="outline"
           onClick={() => void handleSocialLogin('kakao')}
-          disabled={isLoading || loadingProvider !== null}
+          disabled={isSubmitting || loadingProvider !== null}
           className="flex h-12 w-full items-center gap-2 bg-[#FEE500] text-[#391B1B] hover:bg-[#f5dc00] border-[#FEE500]"
         >
           {loadingProvider === 'kakao' ? (

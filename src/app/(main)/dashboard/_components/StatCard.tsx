@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import Spinner from '@/components/common/Spinner';
+import { StatValueSkeleton } from './dashboard-skeletons';
 
 export function StatCard({
   title,
@@ -13,16 +13,16 @@ export function StatCard({
   isLoading?: boolean;
 }) {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm">
-      <p className="text-slate-600 text-sm mb-1">{title}</p>
-      {isLoading ? (
-        <div className="h-8 flex items-center">
-          <Spinner size="sm" />
-        </div>
-      ) : (
-        <p className="text-2xl font-bold text-slate-800">{value}</p>
-      )}
-      {chart && <div className="mt-2">{chart}</div>}
+    <div className="flex h-full flex-col rounded-xl bg-white p-4 shadow-sm">
+      <p className="mb-1 text-sm text-slate-600">{title}</p>
+      <div className="mb-2 h-8">
+        {isLoading ? (
+          <StatValueSkeleton />
+        ) : (
+          <p className="text-2xl font-bold text-slate-800">{value}</p>
+        )}
+      </div>
+      {chart && <div className="mt-auto">{chart}</div>}
     </div>
   );
 }

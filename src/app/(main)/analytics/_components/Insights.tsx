@@ -9,7 +9,8 @@ import {
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
-import Spinner from '@/components/common/Spinner';
+import { CrossfadeContent } from '@/components/common/CrossfadeContent';
+import { InsightCardsSkeleton } from '@/components/common/skeletons';
 import { useTransactionsByRangeQuery } from '../_api/useAnalyticsQuery';
 import { useAnalyticsPeriod } from '../_providers/analytics-period-context';
 import { useBudgetsQuery } from '../../budgets/_api/useBudgetsQuery';
@@ -170,48 +171,47 @@ export function Insights() {
       </div>
 
       {/* 콘텐츠 */}
-      {dataLoading || aiLoading ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3">
-          <Spinner size="sm" />
-          <p className="text-xs text-slate-400">
-            {dataLoading ? '데이터 불러오는 중...' : 'AI가 분석하는 중...'}
-          </p>
-        </div>
-      ) : aiError ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
-          <AlertTriangle className="w-6 h-6 text-yellow-400" />
-          <p className="text-sm text-slate-500">{aiError}</p>
-          <button
-            onClick={handleRefresh}
-            className="text-xs text-[#F97354] hover:underline"
-          >
-            다시 시도
-          </button>
-        </div>
-      ) : !aiInsights || aiInsights.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-slate-400 text-sm">
-            인사이트를 생성하기에 데이터가 부족합니다.
-          </p>
-        </div>
-      ) : (
-        <div className="flex-1 grid grid-cols-1 gap-3 content-start">
-          {aiInsights.map((insight, i) => (
-            <div
-              key={i}
-              className={`p-4 rounded-xl border-l-4 ${TYPE_STYLE[insight.type]}`}
+      <CrossfadeContent
+        isLoading={dataLoading || aiLoading}
+        skeleton={<InsightCardsSkeleton cards={3} />}
+        className="flex-1"
+      >
+        {aiError ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
+            <AlertTriangle className="w-6 h-6 text-yellow-400" />
+            <p className="text-sm text-slate-500">{aiError}</p>
+            <button
+              onClick={handleRefresh}
+              className="text-xs text-[#F97354] hover:underline"
             >
-              <div className="flex items-center gap-2 mb-1">
-                <InsightIcon type={insight.type} />
-                <h4 className="font-semibold text-slate-800">
-                  {insight.title}
-                </h4>
+              다시 시도
+            </button>
+          </div>
+        ) : !aiInsights || aiInsights.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-slate-400 text-sm">
+              인사이트를 생성하기에 데이터가 부족합니다.
+            </p>
+          </div>
+        ) : (
+          <div className="flex-1 grid grid-cols-1 gap-3 content-start">
+            {aiInsights.map((insight, i) => (
+              <div
+                key={i}
+                className={`p-4 rounded-xl border-l-4 ${TYPE_STYLE[insight.type]}`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <InsightIcon type={insight.type} />
+                  <h4 className="font-semibold text-slate-800">
+                    {insight.title}
+                  </h4>
+                </div>
+                <p className="text-sm text-slate-600">{insight.description}</p>
               </div>
-              <p className="text-sm text-slate-600">{insight.description}</p>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </CrossfadeContent>
 
       <p className="text-xs text-slate-300 mt-3 text-right shrink-0">
         Powered by Gemini

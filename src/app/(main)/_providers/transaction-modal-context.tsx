@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
@@ -33,8 +34,10 @@ export function TransactionModalProvider({
     setOpen(true);
   }, []);
 
+  const value = useMemo(() => ({ openModal }), [openModal]);
+
   return (
-    <TransactionModalContext.Provider value={{ openModal }}>
+    <TransactionModalContext.Provider value={value}>
       {children}
       <TransactionModal
         key={modalKey}

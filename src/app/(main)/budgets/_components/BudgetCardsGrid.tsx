@@ -1,6 +1,6 @@
 'use client';
 
-import Spinner from '@/components/common/Spinner';
+import { BudgetCardsGridSkeleton } from '@/components/common/skeletons';
 import { useBudgetsQuery } from '../_api/useBudgetsQuery';
 import { useDeleteBudgetMutation } from '../_api/useBudgetMutations';
 import { BudgetCard } from './BudgetCard';
@@ -20,11 +20,7 @@ export function BudgetCardsGrid({
   const { mutate: deleteBudget } = useDeleteBudgetMutation(month, year);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-40">
-        <Spinner size="sm" />
-      </div>
-    );
+    return <BudgetCardsGridSkeleton cards={4} />;
   }
 
   if (data.length === 0) {
@@ -32,7 +28,7 @@ export function BudgetCardsGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {data.map((budget, idx) => (
         <BudgetCard
           key={budget.budget_id}

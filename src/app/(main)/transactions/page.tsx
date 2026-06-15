@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Download, Plus, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,13 +39,15 @@ export default function TransactionsPage() {
   const { openModal } = useTransactionModal();
   const deleteMutation = useDeleteTransactionMutation();
   const createMutation = useCreateTransactionMutation();
+  const createMutationRef = useRef(createMutation);
   const { data: categories = [] } = useCategoriesQuery();
 
   filterRef.current = filter;
   searchRef.current = search;
   categoriesRef.current = categories;
+  createMutationRef.current = createMutation;
 
-  const handleExport = async () => {
+  const handleExport = useCallback(async () => {
     try {
       const exportData = await fetchTransactionsForExport({
         type: filterRef.current,
@@ -56,9 +58,8 @@ export default function TransactionsPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `vibe-ledger-transactions-${new Date()
-        .toISOString()
-        .slice(0, 10)}.csv`;
+      const today = new Date().toISOString().slice(0, 10);
+      link.download = `vibe-ledger-거래내역-${today}.csv`;
       link.click();
       URL.revokeObjectURL(url);
       toast.success(`${exportData.length}건의 거래를 내보냈습니다.`);
@@ -67,9 +68,9 @@ export default function TransactionsPage() {
         error instanceof Error ? error.message : 'CSV 내보내기에 실패했습니다.'
       );
     }
-  };
+  }, []);
 
-  const handleImport = async (file: File) => {
+  const handleImport = useCallback(async (file: File) => {
     try {
       const rows = parseTransactionsCsv(await file.text());
 
@@ -81,7 +82,7 @@ export default function TransactionsPage() {
           throw new Error(`"${row.categoryName}" 카테고리를 찾을 수 없습니다.`);
         }
 
-        const result = await createMutation.mutateAsync({
+        const result = await createMutationRef.current.mutateAsync({
           amount: row.amount,
           description: row.description,
           date: row.date,
@@ -98,34 +99,37 @@ export default function TransactionsPage() {
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  };
+  }, []);
 
-  const action = (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        onClick={() => void handleExport()}
-        className="flex items-center gap-2"
-      >
-        <Download className="w-4 h-4" />
-        CSV 내보내기
-      </Button>
-      <Button
-        variant="outline"
-        onClick={() => fileInputRef.current?.click()}
-        className="flex items-center gap-2"
-      >
-        <Upload className="w-4 h-4" />
-        CSV 가져오기
-      </Button>
-      <Button
-        onClick={() => openModal()}
-        className="bg-[#F97354] hover:bg-[#e86344] text-white flex items-center gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        거래 추가
-      </Button>
-    </div>
+  const action = useMemo(
+    () => (
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() => void handleExport()}
+          className="flex items-center gap-2"
+        >
+          <Download className="w-4 h-4" />
+          CSV 내보내기
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-2"
+        >
+          <Upload className="w-4 h-4" />
+          CSV 가져오기
+        </Button>
+        <Button
+          onClick={() => openModal()}
+          className="flex items-center gap-2 bg-[#F97354] text-white hover:bg-[#e86344]"
+        >
+          <Plus className="w-4 h-4" />
+          거래 추가
+        </Button>
+      </div>
+    ),
+    [openModal]
   );
 
   useSetHeader({

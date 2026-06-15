@@ -1,7 +1,7 @@
 'use client';
 
-import Spinner from '@/components/common/Spinner';
 import { useMonthlySummaryQuery } from '../../transactions/_api/useMonthlySummaryQuery';
+import { StatValueSkeleton } from './dashboard-skeletons';
 
 export function SavingsGoalCard() {
   const { data, isLoading } = useMonthlySummaryQuery();
@@ -13,25 +13,29 @@ export function SavingsGoalCard() {
       : 0;
 
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm">
-      <p className="text-slate-600 text-sm mb-1">이달의 저축률</p>
-      {isLoading ? (
-        <div className="h-8 flex items-center">
-          <Spinner size="sm" />
-        </div>
-      ) : (
-        <p className="text-2xl font-bold text-slate-800">
-          {savingsRate.toFixed(1)}%
-        </p>
-      )}
-      <div className="mt-2">
-        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+    <div className="flex h-full flex-col rounded-xl bg-white p-4 shadow-sm">
+      <p className="mb-1 text-sm text-slate-600">이달의 저축률</p>
+      <div className="mb-2 h-8">
+        {isLoading ? (
+          <StatValueSkeleton />
+        ) : (
+          <p className="text-2xl font-bold text-slate-800">
+            {savingsRate.toFixed(1)}%
+          </p>
+        )}
+      </div>
+      <div className="mt-auto">
+        <div className="h-2 overflow-hidden rounded-full bg-gray-200">
           <div
-            className="h-full bg-brand-coral rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(savingsRate, 100)}%` }}
+            className={`h-full rounded-full bg-brand-coral ${isLoading ? 'w-0' : ''}`}
+            style={
+              isLoading
+                ? undefined
+                : { width: `${Math.min(savingsRate, 100)}%` }
+            }
           />
         </div>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="mt-1 text-xs text-slate-500">
           수입 대비 저축 (수입 - 지출)
         </p>
       </div>

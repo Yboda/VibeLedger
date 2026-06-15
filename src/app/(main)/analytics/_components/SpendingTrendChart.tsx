@@ -1,6 +1,7 @@
 'use client';
 
-import Spinner from '@/components/common/Spinner';
+import { CrossfadeContent } from '@/components/common/CrossfadeContent';
+import { PairedBarChartSkeleton } from '@/components/common/skeletons';
 import {
   useMonthlyTrendForAnalyticsQuery,
   useTransactionsByRangeQuery,
@@ -91,12 +92,14 @@ export function SpendingTrendChart() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Spinner size="sm" />
-        </div>
-      ) : (
-        <div className="flex items-end gap-2 h-64">
+      <CrossfadeContent
+        isLoading={isLoading}
+        skeleton={
+          <PairedBarChartSkeleton bars={chartData.length || 7} height={256} />
+        }
+        className="h-64"
+      >
+        <div className="flex h-64 items-end gap-2">
           {chartData.map((d, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-1">
               <div
@@ -116,7 +119,7 @@ export function SpendingTrendChart() {
             </div>
           ))}
         </div>
-      )}
+      </CrossfadeContent>
     </div>
   );
 }

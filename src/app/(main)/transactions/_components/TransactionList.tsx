@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Spinner from '@/components/common/Spinner';
+import { CrossfadeContent } from '@/components/common/CrossfadeContent';
+import { TransactionListSkeleton } from '@/components/common/skeletons';
 import { type Transaction } from '@/lib/api/transactions';
 import { CategoryIcon } from './CategoryIcon';
 
@@ -50,74 +51,76 @@ export function TransactionList({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
-      ) : transactions.length === 0 ? (
-        <div className="py-16 text-center text-slate-500">
-          거래 내역이 없습니다.
-        </div>
-      ) : (
-        Object.entries(groupedTransactions).map(([date, txs]) => (
-          <div key={date}>
-            <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
-              <p className="text-sm font-medium text-slate-600">
-                {formatDate(date)}
-              </p>
-            </div>
-            {txs.map(tx => (
-              <div
-                key={tx.id}
-                className="group px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center justify-between"
-              >
-                <div className="flex items-center gap-4">
-                  <CategoryIcon category={tx.categories} />
-                  <div>
-                    <p className="font-medium text-slate-800">
-                      {tx.description ?? tx.categories?.name ?? '미분류'}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {tx.categories?.name ?? '미분류'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <p
-                    className={`font-semibold ${
-                      tx.categories?.type === 'INCOME'
-                        ? 'text-green-600'
-                        : 'text-slate-800'
-                    }`}
-                  >
-                    {formatAmount(tx)}
-                  </p>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => onEdit(tx)}
-                      className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-gray-200 transition-colors"
-                      title="수정"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(tx.id)}
-                      className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                      title="삭제"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+    <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+      <CrossfadeContent
+        isLoading={loading}
+        skeleton={<TransactionListSkeleton groups={3} />}
+        className="min-h-[320px]"
+      >
+        {transactions.length === 0 ? (
+          <div className="py-16 text-center text-slate-500">
+            거래 내역이 없습니다.
           </div>
-        ))
-      )}
+        ) : (
+          Object.entries(groupedTransactions).map(([date, txs]) => (
+            <div key={date}>
+              <div className="border-b border-gray-100 bg-gray-50 px-5 py-3">
+                <p className="text-sm font-medium text-slate-600">
+                  {formatDate(date)}
+                </p>
+              </div>
+              {txs.map(tx => (
+                <div
+                  key={tx.id}
+                  className="group flex items-center justify-between border-b border-gray-100 px-5 py-4 transition-colors hover:bg-gray-50"
+                >
+                  <div className="flex items-center gap-4">
+                    <CategoryIcon category={tx.categories} />
+                    <div>
+                      <p className="font-medium text-slate-800">
+                        {tx.description ?? tx.categories?.name ?? '미분류'}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {tx.categories?.name ?? '미분류'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <p
+                      className={`font-semibold ${
+                        tx.categories?.type === 'INCOME'
+                          ? 'text-green-600'
+                          : 'text-slate-800'
+                      }`}
+                    >
+                      {formatAmount(tx)}
+                    </p>
+                    <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        onClick={() => onEdit(tx)}
+                        className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-gray-200 hover:text-slate-600"
+                        title="수정"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => onDelete(tx.id)}
+                        className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                        title="삭제"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))
+        )}
+      </CrossfadeContent>
 
       {!loading && total > 0 && (
-        <div className="px-5 py-4 flex items-center justify-between">
+        <div className="flex items-center justify-between px-5 py-4">
           <p className="text-sm text-slate-500">
             총 {total}개 거래 중 {(page - 1) * pageSize + 1}-
             {Math.min(page * pageSize, total)} 표시
@@ -130,7 +133,7 @@ export function TransactionList({
               onClick={() => onPageChange(page - 1)}
               disabled={page === 1}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="h-4 w-4" />
               이전
             </Button>
             <div className="flex items-center gap-1">
@@ -147,10 +150,10 @@ export function TransactionList({
                   <button
                     key={pageNum}
                     onClick={() => onPageChange(pageNum)}
-                    className={`w-8 h-8 rounded text-sm ${
+                    className={`h-8 w-8 rounded text-sm ${
                       pageNum === page
-                        ? 'bg-slate-800 text-white font-medium'
-                        : 'hover:bg-gray-100 text-slate-600'
+                        ? 'bg-slate-800 font-medium text-white'
+                        : 'text-slate-600 hover:bg-gray-100'
                     }`}
                   >
                     {pageNum}
@@ -166,7 +169,7 @@ export function TransactionList({
               disabled={page === totalPages || totalPages === 0}
             >
               다음
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>

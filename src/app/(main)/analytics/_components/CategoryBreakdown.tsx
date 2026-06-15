@@ -17,7 +17,8 @@ import {
   type LucideProps,
 } from 'lucide-react';
 import { type ElementType } from 'react';
-import Spinner from '@/components/common/Spinner';
+import { CrossfadeContent } from '@/components/common/CrossfadeContent';
+import { DonutChartSkeleton } from '@/components/common/skeletons';
 import { useCategorySpendingByRangeQuery } from '../_api/useAnalyticsQuery';
 import { useAnalyticsPeriod } from '../_providers/analytics-period-context';
 
@@ -101,99 +102,103 @@ export function CategoryBreakdown() {
         카테고리별 지출
       </h3>
 
-      {isLoading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Spinner size="sm" />
-        </div>
-      ) : categories.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-slate-400 text-sm">
-            해당 기간에 지출 내역이 없습니다.
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* 도넛 차트 (Recharts) — 중앙 금액 오버레이 */}
-          <div className="relative shrink-0" style={{ height: 160 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="45%"
-                  outerRadius="70%"
-                  dataKey="value"
-                  nameKey="name"
-                  paddingAngle={categories.length > 1 ? 2 : 0}
-                  startAngle={90}
-                  endAngle={-270}
-                >
-                  {chartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  content={<DonutTooltip />}
-                  wrapperStyle={{ zIndex: 10 }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-
-            {/* 중앙 총 지출 텍스트 */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p className="text-base font-bold text-slate-800 leading-tight">
-                ₩{formatAmount(total)}
-              </p>
-              <p className="text-xs text-slate-500">총 지출</p>
-            </div>
+      <CrossfadeContent
+        isLoading={isLoading}
+        skeleton={<DonutChartSkeleton rows={5} />}
+        className="flex-1"
+      >
+        {categories.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center">
+            <p className="text-sm text-slate-400">
+              해당 기간에 지출 내역이 없습니다.
+            </p>
           </div>
-
-          {/* 카테고리 목록 */}
-          <div className="flex-1 min-h-0 space-y-2.5 overflow-y-auto pr-1 mt-4">
-            {categories.map((cat, i) => {
-              const color =
-                cat.color ?? DONUT_COLORS[i % DONUT_COLORS.length] ?? '#6B7280';
-              const percentage = total > 0 ? (cat.total / total) * 100 : 0;
-              const Icon =
-                (cat.icon ? ICON_MAP[cat.icon] : null) ?? MoreHorizontal;
-
-              return (
-                <div key={i} className="flex items-center gap-3">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: color }}
+        ) : (
+          <>
+            {/* 도넛 차트 (Recharts) — 중앙 금액 오버레이 */}
+            <div className="relative shrink-0" style={{ height: 160 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="45%"
+                    outerRadius="70%"
+                    dataKey="value"
+                    nameKey="name"
+                    paddingAngle={categories.length > 1 ? 2 : 0}
+                    startAngle={90}
+                    endAngle={-270}
                   >
-                    <Icon className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-slate-700 truncate">
-                        {cat.name}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-800 ml-2 shrink-0">
-                        ₩{cat.total.toLocaleString('ko-KR')}
-                      </span>
+                    {chartData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={<DonutTooltip />}
+                    wrapperStyle={{ zIndex: 10 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+
+              {/* 중앙 총 지출 텍스트 */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <p className="text-base font-bold text-slate-800 leading-tight">
+                  ₩{formatAmount(total)}
+                </p>
+                <p className="text-xs text-slate-500">총 지출</p>
+              </div>
+            </div>
+
+            {/* 카테고리 목록 */}
+            <div className="flex-1 min-h-0 space-y-2.5 overflow-y-auto pr-1 mt-4">
+              {categories.map((cat, i) => {
+                const color =
+                  cat.color ??
+                  DONUT_COLORS[i % DONUT_COLORS.length] ??
+                  '#6B7280';
+                const percentage = total > 0 ? (cat.total / total) * 100 : 0;
+                const Icon =
+                  (cat.icon ? ICON_MAP[cat.icon] : null) ?? MoreHorizontal;
+
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: color }}
+                    >
+                      <Icon className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${percentage}%`,
-                          backgroundColor: color,
-                        }}
-                      />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-medium text-slate-700 truncate">
+                          {cat.name}
+                        </span>
+                        <span className="text-sm font-semibold text-slate-800 ml-2 shrink-0">
+                          ₩{cat.total.toLocaleString('ko-KR')}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${percentage}%`,
+                            backgroundColor: color,
+                          }}
+                        />
+                      </div>
                     </div>
+                    <span className="text-xs text-slate-400 w-9 text-right shrink-0">
+                      {percentage.toFixed(0)}%
+                    </span>
                   </div>
-                  <span className="text-xs text-slate-400 w-9 text-right shrink-0">
-                    {percentage.toFixed(0)}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+                );
+              })}
+            </div>
+          </>
+        )}
+      </CrossfadeContent>
     </div>
   );
 }

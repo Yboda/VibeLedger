@@ -1,7 +1,8 @@
 'use client';
 
 import { HandCoins, Receipt, Activity } from 'lucide-react';
-import Spinner from '@/components/common/Spinner';
+import { CrossfadeContent } from '@/components/common/CrossfadeContent';
+import { StatCardsRowSkeleton } from '@/components/common/skeletons';
 import { useMonthlySummaryQuery } from '../_api/useMonthlySummaryQuery';
 
 export function SummaryCards() {
@@ -10,62 +11,55 @@ export function SummaryCards() {
   const summary = data ?? { totalIncome: 0, totalExpense: 0, netBalance: 0 };
 
   return (
-    <div className="grid grid-cols-3 gap-4 mb-6">
-      <div className="bg-white rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-slate-500 text-sm">이번 달 수입</p>
-            {loading ? (
-              <Spinner className="mt-2" />
-            ) : (
+    <CrossfadeContent
+      isLoading={loading}
+      skeleton={<StatCardsRowSkeleton count={3} className="mb-6 grid-cols-3" />}
+    >
+      <div className="mb-6 grid grid-cols-3 gap-4">
+        <div className="rounded-xl bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-500">이번 달 수입</p>
               <p className="text-2xl font-bold text-slate-800">
                 +₩{summary.totalIncome.toLocaleString()}
               </p>
-            )}
-          </div>
-          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-            <HandCoins className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+              <HandCoins className="h-6 w-6 text-green-600" />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="bg-white rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-slate-500 text-sm">이번 달 지출</p>
-            {loading ? (
-              <Spinner className="mt-2" />
-            ) : (
+        <div className="rounded-xl bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-500">이번 달 지출</p>
               <p className="text-2xl font-bold text-slate-800">
                 -₩{summary.totalExpense.toLocaleString()}
               </p>
-            )}
-          </div>
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-            <Receipt className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <Receipt className="h-6 w-6 text-red-600" />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="bg-[#F97354] rounded-xl p-5 shadow-sm text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-white/80 text-sm">이달의 흐름</p>
-            {loading ? (
-              <Spinner className="mt-2 text-white" />
-            ) : (
+        <div className="rounded-xl bg-[#F97354] p-5 text-white shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-white/80">이달의 흐름</p>
               <p className="text-2xl font-bold">
                 {summary.netBalance >= 0 ? '+' : ''}₩
                 {summary.netBalance.toLocaleString()}
               </p>
-            )}
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
+              <Activity className="h-6 w-6 text-white" />
+            </div>
           </div>
-          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-            <Activity className="w-6 h-6 text-white" />
-          </div>
+          <p className="mt-2 text-xs text-white/80">수입 - 지출</p>
         </div>
-        <p className="text-xs text-white/80 mt-2">수입 - 지출</p>
       </div>
-    </div>
+    </CrossfadeContent>
   );
 }

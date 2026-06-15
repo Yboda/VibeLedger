@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AppEntryOverlay } from '@/components/common/AppEntryOverlay';
 import { QueryProvider } from '@/providers/query-provider';
 import { SupabaseProvider } from '@/providers/supabase-provider';
 import { Toaster } from 'sonner';
@@ -20,6 +21,7 @@ export default function RootLayout({
         <QueryProvider>
           <SupabaseProvider>{children}</SupabaseProvider>
         </QueryProvider>
+        <AppEntryOverlay />
         <Toaster richColors position="top-center" />
       </body>
     </html>

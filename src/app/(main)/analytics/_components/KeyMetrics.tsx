@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 import { ArrowLeftRight, Home, TrendingDown, TrendingUp } from 'lucide-react';
-import Spinner from '@/components/common/Spinner';
+import { CrossfadeContent } from '@/components/common/CrossfadeContent';
+import { StatCardsRowSkeleton } from '@/components/common/skeletons';
 import { useTransactionsByRangeQuery } from '../_api/useAnalyticsQuery';
 import { useAnalyticsPeriod } from '../_providers/analytics-period-context';
 
@@ -91,29 +92,28 @@ export function KeyMetrics() {
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-6">
-      {cards.map((card, index) => (
-        <div key={index} className="bg-white rounded-xl p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-3">
-            <div
-              className={`w-10 h-10 rounded-lg flex items-center justify-center ${card.colorClass}`}
-            >
-              <card.icon className={`w-5 h-5 ${card.iconColor}`} />
+    <CrossfadeContent
+      isLoading={isLoading}
+      skeleton={<StatCardsRowSkeleton count={4} className="mb-6 grid-cols-4" />}
+    >
+      <div className="mb-6 grid grid-cols-4 gap-4">
+        {cards.map((card, index) => (
+          <div key={index} className="rounded-xl bg-white p-5 shadow-sm">
+            <div className="mb-3 flex items-start justify-between">
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-lg ${card.colorClass}`}
+              >
+                <card.icon className={`h-5 w-5 ${card.iconColor}`} />
+              </div>
             </div>
+            <p className="text-2xl font-bold text-slate-800">{card.value}</p>
+            <p className="text-sm text-slate-500">{card.label}</p>
+            {card.subLabel && (
+              <p className="mt-0.5 text-xs text-slate-400">{card.subLabel}</p>
+            )}
           </div>
-          {isLoading ? (
-            <Spinner size="sm" />
-          ) : (
-            <>
-              <p className="text-2xl font-bold text-slate-800">{card.value}</p>
-              <p className="text-sm text-slate-500">{card.label}</p>
-              {card.subLabel && (
-                <p className="text-xs text-slate-400 mt-0.5">{card.subLabel}</p>
-              )}
-            </>
-          )}
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </CrossfadeContent>
   );
 }

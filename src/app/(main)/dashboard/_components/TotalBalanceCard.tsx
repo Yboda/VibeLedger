@@ -1,26 +1,26 @@
 'use client';
 
-import Spinner from '@/components/common/Spinner';
 import { useMonthlySummaryQuery } from '../../transactions/_api/useMonthlySummaryQuery';
+import { StatValueSkeleton } from './dashboard-skeletons';
 
 export function TotalBalanceCard() {
   const { data, isLoading } = useMonthlySummaryQuery();
   const netBalance = data?.netBalance ?? 0;
 
   return (
-    <div className="bg-brand-coral rounded-xl p-5 text-white relative overflow-hidden col-span-2">
+    <div className="relative col-span-2 h-full overflow-hidden rounded-xl bg-brand-coral p-5 text-white">
       <div className="relative z-10">
-        <p className="text-white/90 text-sm mb-1">이달의 순수익</p>
-        {isLoading ? (
-          <div className="h-9 flex items-center">
-            <Spinner size="sm" className="text-white" />
-          </div>
-        ) : (
-          <p className="text-3xl font-bold">
-            {netBalance >= 0 ? '' : '-'}₩
-            {Math.abs(netBalance).toLocaleString('ko-KR')}
-          </p>
-        )}
+        <p className="mb-1 text-sm text-white/90">이달의 순수익</p>
+        <div className="h-9">
+          {isLoading ? (
+            <StatValueSkeleton large className="bg-white/25" />
+          ) : (
+            <p className="text-3xl font-bold">
+              {netBalance >= 0 ? '' : '-'}₩
+              {Math.abs(netBalance).toLocaleString('ko-KR')}
+            </p>
+          )}
+        </div>
       </div>
       <div className="absolute right-4 top-1/2 -translate-y-1/2">
         <svg width="100" height="60" viewBox="0 0 100 60" fill="none">
