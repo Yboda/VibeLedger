@@ -30,8 +30,8 @@ export default function AuthLayout({
       <GeometricBackground />
 
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative z-10">
-        <div className="mb-6">
-          <VibeLedgerLogo />
+        <div className="mb-6 flex justify-center">
+          <VibeLedgerLogo size="md" />
         </div>
 
         {children}

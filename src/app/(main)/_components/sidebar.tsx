@@ -1,14 +1,19 @@
 'use client';
 
+import { useState } from 'react';
 import VibeLedgerLogo from '@/components/common/VibeLedgerLogo';
+import { useSupabase } from '@/providers/supabase-provider';
 import {
   LayoutDashboard,
   ArrowLeftRight,
   PiggyBank,
   BarChart3,
   Plus,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useTransactionModal } from '../_providers/transaction-modal-context';
 import { useNavigation, useNavActive } from '../_providers/navigation-context';
 
@@ -65,11 +70,26 @@ function SidebarDecoration() {
 
 export function Sidebar() {
   const { openModal } = useTransactionModal();
+  const { signOut } = useSupabase();
+  const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      toast.success('로그아웃이 완료되었습니다.');
+      router.push('/login');
+      router.refresh();
+    } catch {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <div className="relative flex min-h-screen w-56 flex-col bg-slate-800">
-      <div className="py-4 pr-1">
-        <VibeLedgerLogo variant="dark" height="h-26" />
+      <div className="px-3 py-4">
+        <VibeLedgerLogo variant="dark" fullWidth />
       </div>
       <nav className="mt-4 flex flex-col gap-1">
         {NAV_ITEMS.map(item => (
@@ -85,6 +105,18 @@ export function Sidebar() {
         >
           <Plus className="h-5 w-5" />
           <span>지출 등록</span>
+        </button>
+      </div>
+
+      <div className="relative z-10 mt-auto flex justify-center px-3 pb-5">
+        <button
+          type="button"
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          className="flex items-center gap-1.5 rounded-full border border-white/15 bg-slate-950/85 px-3 py-1.5 text-xs text-slate-300 shadow-md backdrop-blur-sm transition-colors hover:bg-slate-950 hover:text-white disabled:opacity-50"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          <span>{isSigningOut ? '로그아웃 중...' : '로그아웃'}</span>
         </button>
       </div>
 
