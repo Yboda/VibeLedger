@@ -14,6 +14,21 @@ describe('llm validation', () => {
     expect(result.success).toBe(true);
   });
 
+  it('accepts parsed output without amount when only date and place are given', () => {
+    const result = parsedTransactionSchema.safeParse({
+      amount: null,
+      date: '2025-12-13',
+      description: '병원',
+      categoryName: '의료/건강',
+      type: 'EXPENSE',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.amount).toBeUndefined();
+    }
+  });
+
   it('rejects malformed parsed transaction output', () => {
     const result = parsedTransactionSchema.safeParse({
       amount: -1,

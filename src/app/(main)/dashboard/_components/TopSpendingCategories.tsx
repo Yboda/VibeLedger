@@ -50,7 +50,7 @@ export function TopSpendingCategories() {
             </p>
           </div>
         ) : (
-          <div className="h-full w-full min-h-0">
+          <div className="h-full min-h-[140px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 layout="vertical"

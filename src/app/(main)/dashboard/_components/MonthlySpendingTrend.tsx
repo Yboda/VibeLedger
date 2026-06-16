@@ -45,7 +45,7 @@ export function MonthlySpendingTrend() {
         className="min-h-0 w-full flex-1"
         skeleton={<MonthlyTrendChartSkeleton />}
       >
-        <div className="h-full w-full">
+        <div className="h-full min-h-[192px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={data}

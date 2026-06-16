@@ -2,12 +2,17 @@
 
 import { createClient } from '@/lib/supabase/server';
 import {
+  resolveLlmCategoryName,
+  type TransactionType,
+} from '@/lib/api/transactions';
+import {
   insightItemsSchema,
   parsedTransactionSchema,
 } from '@/lib/validations/llm';
+import { z } from 'zod';
 
 export interface ParsedTransaction {
-  amount: number;
+  amount?: number;
   date: string; // "YYYY-MM-DD"
   description: string;
   categoryName: string;
@@ -83,12 +88,38 @@ const PARSE_SYSTEM_INSTRUCTION = `당신은 사용자의 가계부 입력 문장
 }
 
 규칙:
-- amount는 반드시 양의 정수 (소수점 없음)
+- amount는 반드시 양의 정수 (소수점 없음). 금액이 문장에 없으면 amount 필드를 생략하거나 null로 두세요 (0 사용 금지)
 - "만원" → 10000 곱하기, "천원" → 1000 곱하기
 - date 기준: 오늘, 어제, 그저께 등 상대 표현을 절대 날짜로 변환
-- 카테고리는 반드시 제공된 목록 중 가장 적합한 것 하나를 선택
+- "25년", "25"로 시작하는 연도는 2025년으로 해석 (2000년대)
+- date는 반드시 "YYYY-MM-DD" 형식
+- 카테고리는 반드시 제공된 목록 중 가장 적합한 것의 **정확한 이름**을 categoryName에 사용 (예: 병원·진료 → "의료/건강")
 - 수입/입금/월급/용돈 관련 표현이면 type을 "INCOME"으로, 나머지는 "EXPENSE"로 설정
 - JSON 이외의 텍스트, 마크다운 코드블록 등은 절대 출력하지 마세요`;
+
+function formatParseValidationError(error: z.ZodError): string {
+  const path = error.issues[0]?.path[0];
+  if (path === 'date') {
+    return '날짜를 인식하지 못했습니다. "25년 12월 13일"처럼 입력해보세요.';
+  }
+  if (path === 'categoryName') {
+    return '카테고리를 인식하지 못했습니다. 다시 입력해보세요.';
+  }
+  return '파싱 결과가 올바르지 않습니다. 다시 입력해보세요.';
+}
+
+function resolveCategoryFromLlm(
+  rawName: string,
+  type: TransactionType,
+  categoryNames: string[],
+  categoryTypes: Record<string, TransactionType>
+): string | undefined {
+  const categories = categoryNames.map(name => ({
+    name,
+    type: categoryTypes[name] ?? type,
+  }));
+  return resolveLlmCategoryName(categories, rawName, type);
+}
 
 const INSIGHTS_SYSTEM_INSTRUCTION = `당신은 개인 재정 분석 전문가입니다.
 사용자의 가계부 데이터를 분석해 실용적인 인사이트 3가지를 제공해주세요.
@@ -221,27 +252,31 @@ export async function parseTransactionText(
     if (!parsed.success) {
       return {
         data: null,
-        error: '파싱 결과가 올바르지 않습니다. 다시 입력해보세요.',
+        error: formatParseValidationError(parsed.error),
       };
     }
 
     const parsedData = parsed.data;
-    if (
-      !categoryNames.includes(parsedData.categoryName) ||
-      categoryTypes[parsedData.categoryName] !== parsedData.type
-    ) {
+    const resolvedCategory = resolveCategoryFromLlm(
+      parsedData.categoryName,
+      parsedData.type,
+      categoryNames,
+      categoryTypes
+    );
+
+    if (!resolvedCategory) {
       return {
         data: null,
-        error: 'AI가 선택한 카테고리가 올바르지 않습니다. 다시 입력해보세요.',
+        error: `AI가 선택한 카테고리("${parsedData.categoryName}")를 찾지 못했습니다. 다시 입력해보세요.`,
       };
     }
 
     return {
       data: {
-        amount: parsedData.amount,
+        ...(parsedData.amount != null ? { amount: parsedData.amount } : {}),
         date: parsedData.date,
-        description: parsedData.description,
-        categoryName: parsedData.categoryName,
+        description: parsedData.description || parsedData.categoryName,
+        categoryName: resolvedCategory,
         type: parsedData.type,
       },
       error: null,

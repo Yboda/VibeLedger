@@ -38,6 +38,45 @@ export function findCategoryForImport(
   );
 }
 
+/** AI 파싱 결과 카테고리명 → DB 카테고리 (별칭 포함) */
+const LLM_CATEGORY_ALIASES: Record<string, string> = {
+  병원: '의료/건강',
+  병원비: '의료/건강',
+  의료: '의료/건강',
+  건강: '의료/건강',
+  약국: '의료/건강',
+  진료: '의료/건강',
+  카페: '카페/간식',
+  커피: '카페/간식',
+  간식: '카페/간식',
+  식당: '식비',
+  밥: '식비',
+  마트: '쇼핑',
+  택시: '교통',
+  버스: '교통',
+  지하철: '교통',
+  월급: '월급',
+  급여: '월급',
+};
+
+export function resolveLlmCategoryName(
+  categories: Pick<Category, 'name' | 'type'>[],
+  categoryName: string,
+  type: TransactionType
+): string | undefined {
+  const asCategories = categories as Category[];
+  const direct = findCategoryForImport(asCategories, categoryName, type);
+  if (direct) return direct.name;
+
+  const alias = LLM_CATEGORY_ALIASES[normalizeCategoryName(categoryName)];
+  if (alias) {
+    const matched = findCategoryForImport(asCategories, alias, type);
+    if (matched) return matched.name;
+  }
+
+  return undefined;
+}
+
 export interface Transaction {
   id: number;
   amount: number;

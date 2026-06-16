@@ -96,7 +96,9 @@ export function TransactionModal({
 
       // 파싱 결과를 폼 필드에 자동 입력
       setType(parsed.type);
-      setAmount(String(parsed.amount));
+      if (parsed.amount != null && parsed.amount > 0) {
+        setAmount(String(parsed.amount));
+      }
       setDate(parsed.date);
       setDescription(parsed.description);
 
@@ -115,7 +117,11 @@ export function TransactionModal({
         );
       }
 
-      toast.success('AI가 내용을 자동으로 채웠습니다. 확인 후 저장해주세요.');
+      toast.success(
+        parsed.amount != null && parsed.amount > 0
+          ? 'AI가 내용을 자동으로 채웠습니다. 확인 후 저장해주세요.'
+          : '날짜와 카테고리를 채웠습니다. 금액을 입력한 뒤 저장해주세요.'
+      );
     } finally {
       setIsParsing(false);
     }

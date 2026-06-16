@@ -42,7 +42,7 @@ function NavItem({
       prefetch
       onClick={() => setPendingPath(href)}
       aria-current={active ? 'page' : undefined}
-      className={`mx-3 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 ${
+      className={`mx-3 flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 outline-none focus:outline-none focus-visible:outline-none ${
         active
           ? 'bg-[#F97354] text-white'
           : 'text-white hover:bg-slate-700 transition-colors'
@@ -101,7 +101,7 @@ export function Sidebar() {
         <button
           type="button"
           onClick={() => openModal()}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#F97354] py-3 font-medium text-white transition-colors hover:bg-[#e86344]"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#F97354] py-3 font-medium text-white transition-colors outline-none hover:bg-[#e86344] focus:outline-none focus-visible:outline-none"
         >
           <Plus className="h-5 w-5" />
           <span>지출 등록</span>
@@ -113,7 +113,7 @@ export function Sidebar() {
           type="button"
           onClick={handleSignOut}
           disabled={isSigningOut}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 bg-slate-950/85 px-3 py-1.5 text-xs text-slate-300 shadow-md backdrop-blur-sm transition-colors hover:bg-slate-950 hover:text-white disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-full border border-white/15 bg-slate-950/85 px-3 py-1.5 text-xs text-slate-300 shadow-md backdrop-blur-sm transition-colors outline-none hover:bg-slate-950 hover:text-white focus:outline-none focus-visible:outline-none disabled:opacity-50"
         >
           <LogOut className="h-3.5 w-3.5" />
           <span>{isSigningOut ? '로그아웃 중...' : '로그아웃'}</span>

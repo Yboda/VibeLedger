@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
   TrendingUp,
   AlertTriangle,
@@ -12,13 +11,10 @@ import {
 import { CrossfadeContent } from '@/components/common/CrossfadeContent';
 import { InsightCardsSkeleton } from '@/components/common/skeletons';
 import { useTransactionsByRangeQuery } from '../_api/useAnalyticsQuery';
+import { useAiInsightsQuery } from '../_api/useAiInsightsQuery';
 import { useAnalyticsPeriod } from '../_providers/analytics-period-context';
 import { useBudgetsQuery } from '../../budgets/_api/useBudgetsQuery';
-import {
-  generateInsights,
-  type InsightItem,
-  type FinancialSummary,
-} from '@/actions/llm';
+import { type InsightItem, type FinancialSummary } from '@/actions/llm';
 
 const PERIOD_LABEL: Record<string, string> = {
   week: '이번 주',
@@ -125,26 +121,18 @@ export function Insights() {
     [transactions, budgets, period, endDate]
   );
 
-  // TanStack Query로 AI 인사이트 관리 — effect 내 setState 문제 없음
   const fetchKey = `${period}_${startDate}_${endDate}`;
-  const {
-    data: insightsResult,
-    isFetching: aiLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ['ai-insights', fetchKey],
-    queryFn: () => generateInsights(summary),
-    enabled: !dataLoading,
-    staleTime: Infinity, // 같은 기간은 자동 재요청하지 않음
-    retry: false,
-    gcTime: 5 * 60 * 1000,
-  });
+  const { insightsResult, aiLoading, refresh } = useAiInsightsQuery(
+    fetchKey,
+    summary,
+    dataLoading
+  );
 
   const aiInsights = insightsResult?.data ?? null;
   const aiError = insightsResult?.error ?? null;
 
   const handleRefresh = () => {
-    void refetch();
+    void refresh();
   };
 
   return (
@@ -172,7 +160,7 @@ export function Insights() {
 
       {/* 콘텐츠 */}
       <CrossfadeContent
-        isLoading={dataLoading || aiLoading}
+        isLoading={(dataLoading && !insightsResult) || aiLoading}
         skeleton={<InsightCardsSkeleton cards={3} />}
         className="flex-1"
       >
